@@ -1,0 +1,192 @@
+{
+  "id": "3",
+  "version": "1.0.0",
+  "rootNodeId": "3000",
+  "nodes": {
+    "3000": {
+      "id": "3000",
+      "type": "question",
+      "title": "Objective exam: active ROM screening",
+      "questionText": "Measure active shoulder elevation (flexion) and external rotation with a goniometer, inclinometer, or validated smartphone application (scapular ROM is unreliable and not recommended). Is active elevation and/or active external rotation restricted?",
+      "options": [
+        {
+          "value": "1",
+          "label": "Active elevation and active external rotation are not restricted (pain may be present)",
+          "nextNodeId": "3300"
+        },
+        {
+          "value": "2",
+          "label": "Active elevation and/or active external rotation is restricted",
+          "nextNodeId": "3100"
+        }
+      ]
+    },
+    "3100": {
+      "id": "3100",
+      "type": "question",
+      "title": "Objective exam: passive ROM and active-passive discordance",
+      "questionText": "Measure passive external rotation and passive elevation and compare them with the active values. Capsular pattern: equal loss of active and passive range, with a firm and painful end-point, external rotation affected first. Active-passive discordance: passive ROM is normal while active ROM is limited or painful, which points to rotator cuff or muscle-tendon pathology (pain-limited motion without a hard end-feel).",
+      "options": [
+        {
+          "value": "1",
+          "label": "Capsular pattern: passive loss equals active loss in external rotation and/or elevation, with a firm painful end-point",
+          "nextNodeId": "3200"
+        },
+        {
+          "value": "2",
+          "label": "Active-passive discordance: passive ROM is normal or clearly greater than active ROM",
+          "nextNodeId": "3300"
+        },
+        {
+          "value": "3",
+          "label": "Passive ROM is limited but the pattern is not capsular (no equal loss of active and passive range)",
+          "nextNodeId": "3300"
+        }
+      ]
+    },
+    "3200": {
+      "id": "3200",
+      "type": "question",
+      "title": "Objective exam: confirm adhesive capsulitis pattern",
+      "questionText": "In adhesive capsulitis, external rotation is usually affected first, then abduction in the scapular plane, internal rotation and flexion. Sensation, vascular and neurologic exams are typically intact, and strength is relatively normal within the available ROM. There is no specific special test for adhesive capsulitis. Is the capsular pattern present without focal weakness?",
+      "options": [
+        {
+          "value": "1",
+          "label": "Capsular pattern with intact neurologic exam and strength relatively normal within available ROM",
+          "nextNodeId": "3910"
+        },
+        {
+          "value": "2",
+          "label": "Capsular pattern with focal weakness or abnormal neurologic findings",
+          "nextNodeId": "3300"
+        }
+      ]
+    },
+    "3300": {
+      "id": "3300",
+      "type": "question",
+      "title": "Objective exam: resisted strength testing",
+      "questionText": "Test resisted strength with a handheld dynamometer where available. Supraspinatus: Jobe test (sensitivity 88%, specificity 62%) or full can test (sensitivity 70%, specificity 81%). Infraspinatus: external rotation resistance test. Subscapularis: belly-press test (sensitivity 28%, specificity 87%), bear hug test (sensitivity 32%, specificity 81%), or lift-off test (sensitivity 22%, specificity 94%). Is any resisted test weak or painful?",
+      "options": [
+        {
+          "value": "1",
+          "label": "Weakness or provocation of pain on supraspinatus, infraspinatus, or subscapularis testing",
+          "nextNodeId": "3310"
+        },
+        {
+          "value": "2",
+          "label": "Supraspinatus, infraspinatus, and subscapularis strength normal and pain-free",
+          "nextNodeId": "3400"
+        }
+      ]
+    },
+    "3310": {
+      "id": "3310",
+      "type": "question",
+      "title": "Objective exam: lag signs and drop arm test",
+      "questionText": "Perform the External Rotation Lag Sign at 0 degrees (specificity 98%, sensitivity 10%), the Internal Rotation Lag Sign, and the Drop Arm test (specificity 96%, sensitivity 24%). Also consider Hornblower's sign for infraspinatus (specificity 96%). These tests have high specificity and low sensitivity: a positive result strongly supports a tear, and a negative result does not exclude one. Is any lag sign or the Drop Arm test positive?",
+      "options": [
+        {
+          "value": "1",
+          "label": "External Rotation Lag Sign, Internal Rotation Lag Sign, and/or Drop Arm test positive",
+          "nextNodeId": "3920"
+        },
+        {
+          "value": "2",
+          "label": "All lag signs and the Drop Arm test negative",
+          "nextNodeId": "3400"
+        }
+      ]
+    },
+    "3400": {
+      "id": "3400",
+      "type": "question",
+      "title": "Objective exam: special test cluster",
+      "questionText": "Apply the three-test cluster: (1) Painful Arc test, (2) Hawkins-Kennedy test, (3) Infraspinatus resisted strength test (external rotation resistance). The Painful Arc test helps confirm a rotator cuff diagnosis (specificity 80.5% for subacromial impingement) and the Hawkins-Kennedy test helps rule one out. A combination of tests increases diagnostic accuracy compared with any single test. How many of the three tests are positive?",
+      "options": [
+        {
+          "value": "1",
+          "label": "All three tests positive (Painful Arc, Hawkins-Kennedy, and Infraspinatus resisted strength test)",
+          "nextNodeId": "3930"
+        },
+        {
+          "value": "2",
+          "label": "One or two of the three tests positive",
+          "nextNodeId": "3940"
+        },
+        {
+          "value": "3",
+          "label": "None of the three tests positive",
+          "nextNodeId": "3950"
+        }
+      ]
+    },
+    "3910": {
+      "id": "3910",
+      "type": "diagnosis",
+      "title": "Primary adhesive capsulitis",
+      "primaryDiagnosis": "Findings consistent with primary adhesive capsulitis (frozen shoulder): capsular pattern with equal loss of active and passive ROM, firm painful end-point, and relatively preserved strength. Adhesive capsulitis is a clinical diagnosis and has no specific special test.",
+      "differentials": [
+        "Rotator cuff tendinopathy or tear",
+        "Glenohumeral arthritis",
+        "Calcific tendinitis",
+        "Secondary adhesive capsulitis (trauma, surgery, immobility)"
+      ],
+      "confidenceScore": 75
+    },
+    "3920": {
+      "id": "3920",
+      "type": "diagnosis",
+      "title": "Full-thickness rotator cuff tear",
+      "primaryDiagnosis": "Findings favor a full-thickness rotator cuff tear: a positive lag sign or Drop Arm test, which are highly specific for tears of the supraspinatus and infraspinatus. A negative result on these tests would not have excluded a tear.",
+      "differentials": [
+        "Partial-thickness rotator cuff tear",
+        "Rotator cuff tendinopathy",
+        "Subacromial impingement",
+        "Biceps tendon pathology",
+        "Cervical radiculopathy"
+      ],
+      "confidenceScore": 95
+    },
+    "3930": {
+      "id": "3930",
+      "type": "diagnosis",
+      "title": "Partial rotator cuff tear or tendinopathy",
+      "primaryDiagnosis": "Findings favor a partial-thickness rotator cuff tear or rotator cuff tendinopathy: positive Painful Arc, Hawkins-Kennedy, and Infraspinatus resisted strength tests, without a positive lag sign or Drop Arm test.",
+      "differentials": [
+        "Full-thickness rotator cuff tear",
+        "Subacromial impingement",
+        "Calcific tendinitis",
+        "Biceps tendon pathology"
+      ],
+      "confidenceScore": 85
+    },
+    "3940": {
+      "id": "3940",
+      "type": "diagnosis",
+      "title": "Subacromial impingement",
+      "primaryDiagnosis": "Findings favor subacromial impingement: Painful Arc and/or Hawkins-Kennedy positive without the full three-test cluster and without a positive lag sign or Drop Arm test.",
+      "differentials": [
+        "Rotator cuff tendinopathy",
+        "Partial-thickness rotator cuff tear",
+        "Biceps tendon pathology",
+        "Primary adhesive capsulitis"
+      ],
+      "confidenceScore": 65
+    },
+    "3950": {
+      "id": "3950",
+      "type": "diagnosis",
+      "title": "Objective exam indeterminate",
+      "primaryDiagnosis": "Objective examination does not meet criteria for adhesive capsulitis, a rotator cuff tear, or subacromial impingement. Diagnosis is indeterminate on physical examination.",
+      "differentials": [
+        "Rotator cuff tendinopathy",
+        "Primary adhesive capsulitis (early stage, ROM still preserved)",
+        "Glenohumeral arthritis",
+        "Biceps tendon pathology",
+        "Referred pain from the cervical spine"
+      ],
+      "confidenceScore": 50
+    }
+  }
+}

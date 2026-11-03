@@ -1,0 +1,295 @@
+{
+  "id": "1",
+  "version": "2.0.0",
+  "rootNodeId": "100",
+  "nodes": {
+    "100": {
+      "id": "100",
+      "type": "screening",
+      "title": "Red flag screening: shoulder or neck symptoms",
+      "redFlags": [
+        {
+          "id": "101",
+          "text": "Gait disturbance, including unstable or unsteady gait, gait instability, or new-onset gait imbalance",
+          "nextNodeId": "999"
+        },
+        {
+          "id": "102",
+          "text": "Bowel or bladder changes, including bladder or bowel incontinence, urinary urgency, or bladder dysfunction",
+          "nextNodeId": "999"
+        },
+        {
+          "id": "103",
+          "text": "Positive Hoffman's sign (Tromner sign)",
+          "nextNodeId": "999"
+        },
+        {
+          "id": "104",
+          "text": "Hyperreflexia, including generalized hyperreflexia",
+          "nextNodeId": "999"
+        },
+        {
+          "id": "105",
+          "text": "Positive Babinski sign",
+          "nextNodeId": "999"
+        },
+        {
+          "id": "106",
+          "text": "Clonus",
+          "nextNodeId": "999"
+        },
+        {
+          "id": "107",
+          "text": "Inverted supinator reflex",
+          "nextNodeId": "999"
+        },
+        {
+          "id": "108",
+          "text": "Loss of hand dexterity or hand clumsiness",
+          "nextNodeId": "999"
+        },
+        {
+          "id": "109",
+          "text": "Hand numbness or diffuse paresthesia",
+          "nextNodeId": "999"
+        },
+        {
+          "id": "110",
+          "text": "Limb weakness",
+          "nextNodeId": "999"
+        },
+        {
+          "id": "111",
+          "text": "Sensation of heavy legs",
+          "nextNodeId": "999"
+        },
+        {
+          "id": "112",
+          "text": "Progressive motor deficit",
+          "nextNodeId": "999"
+        },
+        {
+          "id": "113",
+          "text": "Progressive arm weakness",
+          "nextNodeId": "999"
+        },
+        {
+          "id": "114",
+          "text": "Severe or progressive neurological deficits",
+          "nextNodeId": "999"
+        },
+        {
+          "id": "115",
+          "text": "Severe, unrelenting pain despite guideline-directed treatment",
+          "nextNodeId": "999"
+        },
+        {
+          "id": "116",
+          "text": "Fever",
+          "nextNodeId": "999"
+        },
+        {
+          "id": "117",
+          "text": "Night sweats",
+          "nextNodeId": "999"
+        },
+        {
+          "id": "118",
+          "text": "Unexplained weight loss",
+          "nextNodeId": "999"
+        },
+        {
+          "id": "119",
+          "text": "Immunosuppression",
+          "nextNodeId": "999"
+        },
+        {
+          "id": "120",
+          "text": "Persistent pain at rest",
+          "nextNodeId": "999"
+        },
+        {
+          "id": "121",
+          "text": "Tenderness over the vertebrae",
+          "nextNodeId": "999"
+        },
+        {
+          "id": "122",
+          "text": "Radicular symptoms associated with a traumatic injury",
+          "nextNodeId": "999"
+        },
+        {
+          "id": "123",
+          "text": "Pain over the clavicle shaft: an occult or stress fracture must always be ruled out, even in the absence of trauma and especially in elderly people",
+          "nextNodeId": "999"
+        },
+        {
+          "id": "124",
+          "text": "Scapular fracture",
+          "nextNodeId": "999"
+        },
+        {
+          "id": "125",
+          "text": "Post-traumatic scapular muscle detachment",
+          "nextNodeId": "999"
+        },
+        {
+          "id": "126",
+          "text": "Diminished radial pulse, with positional pain worse with neck extension and shoulder abduction, extension, and external rotation",
+          "nextNodeId": "999"
+        },
+        {
+          "id": "127",
+          "text": "Positional paresthesias exacerbated by overhead activity with associated vascular signs",
+          "nextNodeId": "999"
+        },
+        {
+          "id": "128",
+          "text": "Paresthesia and weakness in intrinsic hand muscles due to compression of the brachial plexus, with ipsilateral ptosis, miosis, and anhidrosis (Horner's syndrome), as in Pancoast syndrome",
+          "nextNodeId": "999"
+        },
+        {
+          "id": "129",
+          "text": "Bilateral symptoms, especially following trauma",
+          "nextNodeId": "999"
+        },
+        {
+          "id": "130",
+          "text": "Involvement of multiple root levels, especially following trauma",
+          "nextNodeId": "999"
+        },
+        {
+          "id": "131",
+          "text": "Cancer history or suspicion of malignancy",
+          "nextNodeId": "999"
+        },
+        {
+          "id": "132",
+          "text": "Recent severe fall or acute trauma",
+          "nextNodeId": "999"
+        },
+        {
+          "id": "133",
+          "text": "Acute localized bony tenderness over spine or shoulder complex",
+          "nextNodeId": "999"
+        },
+        {
+          "id": "134",
+          "text": "Unexplained structural deformity",
+          "nextNodeId": "999"
+        }
+      ],
+      "defaultNextNodeId": "200"
+    },
+    "200": {
+      "id": "200",
+      "type": "question",
+      "title": "Differential: cervical provocative tests",
+      "questionText": "Perform the Spurling test (axial compression while extending and rotating the neck toward the symptomatic side; sensitivity 30-50%, specificity 74-93%) and the Arm Squeeze test (sensitivity 96%, specificity 90%). Is either test positive? Both are strongly indicative of cervical radiculopathy.",
+      "options": [
+        {
+          "value": "1",
+          "label": "Spurling test positive and/or Arm Squeeze test positive",
+          "nextNodeId": "300"
+        },
+        {
+          "value": "2",
+          "label": "Both tests negative (Spurling sensitivity is only moderate, so a negative test does not exclude radiculopathy)",
+          "nextNodeId": "210"
+        }
+      ]
+    },
+    "210": {
+      "id": "210",
+      "type": "question",
+      "title": "Differential: pain radiation",
+      "questionText": "Where does the pain localize and radiate? Intrinsic shoulder pain most commonly localizes to the lateral deltoid region, the acromioclavicular joint, and/or the biceps tendon and bicipital groove. Cervical radiculopathy presents with arm pain originating from the neck and radiating beyond the elbow, with motor and sensory deficits.",
+      "options": [
+        {
+          "value": "1",
+          "label": "Pain originates from the neck and radiates beyond the elbow, with motor and sensory deficits",
+          "nextNodeId": "300"
+        },
+        {
+          "value": "2",
+          "label": "Pain localized to the lateral deltoid region, acromioclavicular joint, or biceps tendon and bicipital groove, without radiation beyond the elbow",
+          "nextNodeId": "220"
+        }
+      ]
+    },
+    "220": {
+      "id": "220",
+      "type": "question",
+      "title": "Differential: night pain",
+      "questionText": "Is nocturnal pain or sleep disturbance present? Nocturnal pain is highly indicative of shoulder pathology (almost 90% of patients with symptomatic rotator cuff tears report nocturnal pain and generalized sleep disturbance). Nocturnal pain is not highly indicative of cervical spine pathology.",
+      "options": [
+        {
+          "value": "1",
+          "label": "Nocturnal pain or sleep disturbance present",
+          "nextNodeId": "400"
+        },
+        {
+          "value": "2",
+          "label": "No nocturnal pain",
+          "nextNodeId": "500"
+        }
+      ]
+    },
+    "300": {
+      "id": "300",
+      "type": "diagnosis",
+      "title": "C-spine origin favored",
+      "primaryDiagnosis": "Findings favor cervical spine origin (cervical radiculopathy).",
+      "differentials": [
+        "Shoulder pathology (rotator cuff tear, impingement, glenohumeral arthritis)",
+        "Median nerve entrapment (carpal tunnel syndrome)",
+        "Ulnar neuropathy at the elbow",
+        "Neuralgic amyotrophy (Parsonage-Turner syndrome)",
+        "Thoracic outlet syndrome",
+        "Peripheral entrapments and plexopathies",
+        "Myofascial and musculoskeletal pain syndromes"
+      ],
+      "confidenceScore": 85
+    },
+    "400": {
+      "id": "400",
+      "type": "diagnosis",
+      "title": "Shoulder origin favored",
+      "primaryDiagnosis": "Findings favor intrinsic shoulder origin (for example rotator cuff disease).",
+      "differentials": [
+        "Cervical radiculopathy",
+        "Glenohumeral arthritis"
+      ],
+      "confidenceScore": 85
+    },
+    "500": {
+      "id": "500",
+      "type": "diagnosis",
+      "title": "Origin indeterminate",
+      "primaryDiagnosis": "Neither cervical nor shoulder criteria are met. The source of symptoms is indeterminate, and cervical and shoulder pathology may coexist.",
+      "differentials": [
+        "Cervical radiculopathy",
+        "Shoulder pathology",
+        "Coexisting cervical and shoulder pathology",
+        "Myofascial and musculoskeletal pain syndromes"
+      ],
+      "confidenceScore": 50
+    },
+    "999": {
+      "id": "999",
+      "type": "diagnosis",
+      "title": "Emergency referral",
+      "primaryDiagnosis": "Emergency referral: a positive red flag requires prompt evaluation and specialist referral. Possible causes include cervical myelopathy, progressive neurologic deficit, spinal cord compression, infection, neoplasm (including Pancoast tumor), fracture, or vascular compromise.",
+      "differentials": [
+        "Cervical myelopathy",
+        "Spinal cord compression",
+        "Spinal infection",
+        "Primary or metastatic tumor",
+        "Pancoast syndrome",
+        "Fracture",
+        "Thoracic outlet syndrome (venous or arterial)"
+      ],
+      "confidenceScore": 100
+    }
+  }
+}

@@ -1,0 +1,224 @@
+{
+  "id": "4",
+  "version": "1.0.0",
+  "rootNodeId": "4000",
+  "nodes": {
+    "4000": {
+      "id": "4000",
+      "type": "question",
+      "title": "Layer 3 objective exam outcome",
+      "questionText": "Entry from Layer 3 terminal nodes. Which objective examination outcome was reached? Management depends on this outcome together with the QuickDASH disability tier.",
+      "options": [
+        {
+          "value": "1",
+          "label": "Primary adhesive capsulitis (Layer 3 node 3910)",
+          "nextNodeId": "4100"
+        },
+        {
+          "value": "2",
+          "label": "Full-thickness rotator cuff tear (Layer 3 node 3920)",
+          "nextNodeId": "4400"
+        },
+        {
+          "value": "3",
+          "label": "Partial rotator cuff tear or tendinopathy, or subacromial impingement (Layer 3 nodes 3930 and 3940)",
+          "nextNodeId": "4200"
+        },
+        {
+          "value": "4",
+          "label": "Objective exam indeterminate (Layer 3 node 3950)",
+          "nextNodeId": "4300"
+        }
+      ]
+    },
+    "4100": {
+      "id": "4100",
+      "type": "question",
+      "title": "QuickDASH functional severity (adhesive capsulitis)",
+      "questionText": "Administer the 11-item QuickDASH (each item scored 1 to 5, based on the last week). Score = ((sum of item responses / n) - 1) x 25, where n is the number of completed items. The score runs from 0 (no disability) to 100 (most severe disability) and cannot be calculated if more than 1 item is missing. What is the QuickDASH score?",
+      "options": [
+        {
+          "value": "1",
+          "label": "Tier 1, low disability: QuickDASH less than 20",
+          "nextNodeId": "4110"
+        },
+        {
+          "value": "2",
+          "label": "Tier 2, moderate disability: QuickDASH 20 to 50",
+          "nextNodeId": "4110"
+        },
+        {
+          "value": "3",
+          "label": "Tier 3, high disability: QuickDASH greater than 50",
+          "nextNodeId": "4920"
+        }
+      ]
+    },
+    "4110": {
+      "id": "4110",
+      "type": "question",
+      "title": "Adhesive capsulitis: disease stage and course of conservative care",
+      "questionText": "Primary adhesive capsulitis is managed nonoperatively first. Physical therapy is central across all disease stages, and physical therapy with a home exercise program is most useful early (freezing phase, pain predominant). Surgery is typically reserved for persistent symptoms after 6 to 12 months of conservative management. Where is the patient on this course?",
+      "options": [
+        {
+          "value": "1",
+          "label": "Early disease (freezing phase) or less than 6 months of conservative care",
+          "nextNodeId": "4810"
+        },
+        {
+          "value": "2",
+          "label": "Symptoms persist after 6 months or more of conservative care",
+          "nextNodeId": "4920"
+        }
+      ]
+    },
+    "4200": {
+      "id": "4200",
+      "type": "question",
+      "title": "QuickDASH functional severity (rotator cuff tendinopathy or impingement)",
+      "questionText": "Administer the 11-item QuickDASH (each item scored 1 to 5, based on the last week). Score = ((sum of item responses / n) - 1) x 25, where n is the number of completed items. The score runs from 0 (no disability) to 100 (most severe disability) and cannot be calculated if more than 1 item is missing. What is the QuickDASH score?",
+      "options": [
+        {
+          "value": "1",
+          "label": "Tier 1, low disability: QuickDASH less than 20",
+          "nextNodeId": "4210"
+        },
+        {
+          "value": "2",
+          "label": "Tier 2, moderate disability: QuickDASH 20 to 50",
+          "nextNodeId": "4210"
+        },
+        {
+          "value": "3",
+          "label": "Tier 3, high disability: QuickDASH greater than 50",
+          "nextNodeId": "4920"
+        }
+      ]
+    },
+    "4210": {
+      "id": "4210",
+      "type": "question",
+      "title": "Rotator cuff tendinopathy: response to nonsurgical care",
+      "questionText": "Rotator cuff tendinopathy is managed with nonsurgical care and active rehabilitation. Adults with severe and persistent pain and/or disability despite a maximum of 12 weeks of appropriate nonsurgical care should be referred to a musculoskeletal physician specialist. How has the patient responded?",
+      "options": [
+        {
+          "value": "1",
+          "label": "Less than 12 weeks of nonsurgical care, or improving",
+          "nextNodeId": "4820"
+        },
+        {
+          "value": "2",
+          "label": "Severe and persistent pain and/or disability despite 12 weeks of appropriate nonsurgical care",
+          "nextNodeId": "4920"
+        }
+      ]
+    },
+    "4300": {
+      "id": "4300",
+      "type": "question",
+      "title": "QuickDASH functional severity (indeterminate exam)",
+      "questionText": "Administer the 11-item QuickDASH (each item scored 1 to 5, based on the last week). Score = ((sum of item responses / n) - 1) x 25, where n is the number of completed items. The score runs from 0 (no disability) to 100 (most severe disability) and cannot be calculated if more than 1 item is missing. What is the QuickDASH score?",
+      "options": [
+        {
+          "value": "1",
+          "label": "Tier 1, low disability: QuickDASH less than 20",
+          "nextNodeId": "4830"
+        },
+        {
+          "value": "2",
+          "label": "Tier 2, moderate disability: QuickDASH 20 to 50",
+          "nextNodeId": "4830"
+        },
+        {
+          "value": "3",
+          "label": "Tier 3, high disability: QuickDASH greater than 50",
+          "nextNodeId": "4920"
+        }
+      ]
+    },
+    "4400": {
+      "id": "4400",
+      "type": "question",
+      "title": "QuickDASH functional severity (full-thickness rotator cuff tear)",
+      "questionText": "Administer the 11-item QuickDASH (each item scored 1 to 5, based on the last week) to record baseline functional severity. Score = ((sum of item responses / n) - 1) x 25, where n is the number of completed items. The score runs from 0 (no disability) to 100 (most severe disability) and cannot be calculated if more than 1 item is missing. A full-thickness tear routes to orthopedic evaluation in every tier. What is the QuickDASH score?",
+      "options": [
+        {
+          "value": "1",
+          "label": "Tier 1, low disability: QuickDASH less than 20",
+          "nextNodeId": "4910"
+        },
+        {
+          "value": "2",
+          "label": "Tier 2, moderate disability: QuickDASH 20 to 50",
+          "nextNodeId": "4910"
+        },
+        {
+          "value": "3",
+          "label": "Tier 3, high disability: QuickDASH greater than 50",
+          "nextNodeId": "4910"
+        }
+      ]
+    },
+    "4810": {
+      "id": "4810",
+      "type": "diagnosis",
+      "title": "Structured physical therapy: adhesive capsulitis",
+      "primaryDiagnosis": "Conservative management of primary adhesive capsulitis with low to moderate disability: structured physical therapy (patient education, joint mobilization and manual therapy with ROM exercises, graduated home exercise program including self-stretching), with oral NSAIDs for symptom relief at clinician judgment. Avoid forceful or pain-provocative stretching. Reassess; escalate to orthopedic referral if symptoms persist after 6 months or more of conservative care.",
+      "differentials": [
+        "Orthopedic specialist referral if persistent after 6 to 12 months",
+        "Secondary adhesive capsulitis",
+        "Rotator cuff pathology"
+      ],
+      "confidenceScore": 70
+    },
+    "4820": {
+      "id": "4820",
+      "type": "diagnosis",
+      "title": "Structured physical therapy: rotator cuff tendinopathy or impingement",
+      "primaryDiagnosis": "Conservative management of rotator cuff tendinopathy or subacromial impingement with low to moderate disability: structured physical therapy with progressive exercise therapy and a home exercise program, patient education and activity modification, with short-term acetaminophen or NSAIDs for pain. Reassess within a maximum of 12 weeks.",
+      "differentials": [
+        "Orthopedic specialist referral if severe and persistent after 12 weeks",
+        "Partial-thickness rotator cuff tear",
+        "Calcific tendinitis"
+      ],
+      "confidenceScore": 75
+    },
+    "4830": {
+      "id": "4830",
+      "type": "diagnosis",
+      "title": "Conservative care: indeterminate objective exam",
+      "primaryDiagnosis": "Conservative management with low to moderate disability and an indeterminate objective exam: physical therapy, short-term NSAIDs, and a home exercise program, with reassessment of the working diagnosis. Refer to an orthopedic specialist if severe and persistent pain or disability remains after 12 weeks of appropriate nonsurgical care.",
+      "differentials": [
+        "Rotator cuff tendinopathy",
+        "Primary adhesive capsulitis (early stage)",
+        "Glenohumeral arthritis",
+        "Referred pain from the cervical spine"
+      ],
+      "confidenceScore": 60
+    },
+    "4910": {
+      "id": "4910",
+      "type": "diagnosis",
+      "title": "Orthopedic evaluation: full-thickness rotator cuff tear",
+      "primaryDiagnosis": "Orthopedic specialist evaluation for a full-thickness rotator cuff tear. Physical therapy and operative treatment both improve patient-reported outcomes for small to medium symptomatic tears, but tear size, muscle atrophy, and fatty infiltration may progress over 5 to 10 years with nonoperative management, and healed repairs show better outcomes than physical therapy.",
+      "differentials": [
+        "Partial-thickness rotator cuff tear",
+        "Rotator cuff tendinopathy",
+        "Biceps tendon pathology"
+      ],
+      "confidenceScore": 90
+    },
+    "4920": {
+      "id": "4920",
+      "type": "diagnosis",
+      "title": "Orthopedic specialist referral",
+      "primaryDiagnosis": "Referral to an orthopedic specialist (or other musculoskeletal physician specialist) for further assessment and treatment. Triggers: high disability (QuickDASH greater than 50), or persistent symptoms despite conservative care (more than 6 months in adhesive capsulitis; severe and persistent pain or disability after 12 weeks in rotator cuff tendinopathy).",
+      "differentials": [
+        "Refractory adhesive capsulitis",
+        "Rotator cuff tear",
+        "Glenohumeral arthritis"
+      ],
+      "confidenceScore": 85
+    }
+  }
+}

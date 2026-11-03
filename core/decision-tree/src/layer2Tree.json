@@ -1,0 +1,221 @@
+{
+  "id": "2",
+  "version": "1.0.0",
+  "rootNodeId": "2000",
+  "nodes": {
+    "2000": {
+      "id": "2000",
+      "type": "question",
+      "title": "Subjective history: onset mechanism",
+      "questionText": "Entry from Layer 1 node \"400\" (shoulder origin favored). What was the onset mechanism? Shoulder pathology can arise insidiously and slowly over time, but symptoms are frequently triggered by an injury such as a fall resulting in a rotator cuff tear or biceps pulley injury. Document history and mechanism of injury.",
+      "options": [
+        {
+          "value": "1",
+          "label": "Acute trauma or injury onset (for example a fall)",
+          "nextNodeId": "2100"
+        },
+        {
+          "value": "2",
+          "label": "Insidious onset without a specific injury",
+          "nextNodeId": "2200"
+        }
+      ]
+    },
+    "2100": {
+      "id": "2100",
+      "type": "question",
+      "title": "Subjective history: duration (acute trauma onset)",
+      "questionText": "How long have symptoms been present since the injury? Prolonged duration of symptoms is a recognized negative prognostic factor.",
+      "options": [
+        {
+          "value": "1",
+          "label": "Acute: less than 6 weeks",
+          "nextNodeId": "2430"
+        },
+        {
+          "value": "2",
+          "label": "Subacute: 6 to 12 weeks",
+          "nextNodeId": "2430"
+        },
+        {
+          "value": "3",
+          "label": "Chronic: more than 12 weeks",
+          "nextNodeId": "2430"
+        }
+      ]
+    },
+    "2200": {
+      "id": "2200",
+      "type": "question",
+      "title": "Subjective history: duration (insidious onset)",
+      "questionText": "How long have symptoms been present? Prolonged duration of symptoms is a recognized negative prognostic factor. Primary frozen shoulder is generally self-limiting, but symptoms may persist for over 2 years in some patients.",
+      "options": [
+        {
+          "value": "1",
+          "label": "Acute: less than 6 weeks",
+          "nextNodeId": "2300"
+        },
+        {
+          "value": "2",
+          "label": "Subacute: 6 to 12 weeks",
+          "nextNodeId": "2300"
+        },
+        {
+          "value": "3",
+          "label": "Chronic: more than 12 weeks",
+          "nextNodeId": "2300"
+        }
+      ]
+    },
+    "2300": {
+      "id": "2300",
+      "type": "question",
+      "title": "Metabolic comorbidities",
+      "questionText": "Does the patient have diabetes mellitus (including prediabetes) or thyroid disease? Both significantly increase the risk of developing primary frozen shoulder (adhesive capsulitis). Reported adjusted hazard ratios are 1.32 to 1.67 for diagnosed diabetes and 1.22 for hyperthyroidism. Reported adjusted odds ratios are 1.34 for thyroid disorders and 2.10 for subclinical hypothyroidism.",
+      "options": [
+        {
+          "value": "1",
+          "label": "Diabetes mellitus and/or thyroid disease present",
+          "nextNodeId": "2410"
+        },
+        {
+          "value": "2",
+          "label": "Neither diabetes mellitus nor thyroid disease",
+          "nextNodeId": "2420"
+        }
+      ]
+    },
+    "2410": {
+      "id": "2410",
+      "type": "question",
+      "title": "Psychosocial yellow flags (metabolic comorbidity present)",
+      "questionText": "Administer the Fear-Avoidance Beliefs Questionnaire (FABQ; 16 items scored 0 to 6). FABQ-PA is the sum of items 2-5 (range 0-24). FABQ-W is the sum of items 6, 7, 9-12 and 15 (range 0-42). Fear-avoidance beliefs, kinesiophobia, and pain catastrophizing are recognized psychosocial yellow flags. Is FABQ-PA greater than 15 or FABQ-W greater than 34?",
+      "options": [
+        {
+          "value": "1",
+          "label": "High psychosocial risk: FABQ-PA greater than 15 or FABQ-W greater than 34",
+          "nextNodeId": "2960"
+        },
+        {
+          "value": "2",
+          "label": "Low psychosocial risk: FABQ-PA 15 or less and FABQ-W 34 or less",
+          "nextNodeId": "2950"
+        }
+      ]
+    },
+    "2420": {
+      "id": "2420",
+      "type": "question",
+      "title": "Psychosocial yellow flags (no metabolic comorbidity)",
+      "questionText": "Administer the Fear-Avoidance Beliefs Questionnaire (FABQ; 16 items scored 0 to 6). FABQ-PA is the sum of items 2-5 (range 0-24). FABQ-W is the sum of items 6, 7, 9-12 and 15 (range 0-42). Fear-avoidance beliefs, kinesiophobia, and pain catastrophizing are recognized psychosocial yellow flags. Is FABQ-PA greater than 15 or FABQ-W greater than 34?",
+      "options": [
+        {
+          "value": "1",
+          "label": "High psychosocial risk: FABQ-PA greater than 15 or FABQ-W greater than 34",
+          "nextNodeId": "2940"
+        },
+        {
+          "value": "2",
+          "label": "Low psychosocial risk: FABQ-PA 15 or less and FABQ-W 34 or less",
+          "nextNodeId": "2930"
+        }
+      ]
+    },
+    "2430": {
+      "id": "2430",
+      "type": "question",
+      "title": "Psychosocial yellow flags (acute trauma onset)",
+      "questionText": "Administer the Fear-Avoidance Beliefs Questionnaire (FABQ; 16 items scored 0 to 6). FABQ-PA is the sum of items 2-5 (range 0-24). FABQ-W is the sum of items 6, 7, 9-12 and 15 (range 0-42). Fear-avoidance beliefs, kinesiophobia, and pain catastrophizing are recognized psychosocial yellow flags. Is FABQ-PA greater than 15 or FABQ-W greater than 34?",
+      "options": [
+        {
+          "value": "1",
+          "label": "High psychosocial risk: FABQ-PA greater than 15 or FABQ-W greater than 34",
+          "nextNodeId": "2920"
+        },
+        {
+          "value": "2",
+          "label": "Low psychosocial risk: FABQ-PA 15 or less and FABQ-W 34 or less",
+          "nextNodeId": "2910"
+        }
+      ]
+    },
+    "2910": {
+      "id": "2910",
+      "type": "diagnosis",
+      "title": "Traumatic onset, low psychosocial risk",
+      "primaryDiagnosis": "Shoulder-origin pathology with acute traumatic onset (for example rotator cuff tear or biceps pulley injury). Low psychosocial risk.",
+      "differentials": [
+        "Rotator cuff tendinopathy",
+        "Rotator cuff tear",
+        "Biceps pulley injury",
+        "Secondary frozen shoulder after injury (outside the scope of the primary frozen shoulder guideline)"
+      ],
+      "confidenceScore": 50
+    },
+    "2920": {
+      "id": "2920",
+      "type": "diagnosis",
+      "title": "Traumatic onset, high psychosocial risk",
+      "primaryDiagnosis": "Shoulder-origin pathology with acute traumatic onset (for example rotator cuff tear or biceps pulley injury). High psychosocial risk: elevated fear-avoidance beliefs (FABQ-PA greater than 15 or FABQ-W greater than 34).",
+      "differentials": [
+        "Rotator cuff tendinopathy",
+        "Rotator cuff tear",
+        "Biceps pulley injury",
+        "Secondary frozen shoulder after injury (outside the scope of the primary frozen shoulder guideline)"
+      ],
+      "confidenceScore": 50
+    },
+    "2930": {
+      "id": "2930",
+      "type": "diagnosis",
+      "title": "Insidious onset, no metabolic comorbidity, low psychosocial risk",
+      "primaryDiagnosis": "Shoulder-origin pathology with insidious onset and no diabetes or thyroid disease (for example rotator cuff tendinopathy). Low psychosocial risk.",
+      "differentials": [
+        "Rotator cuff tendinopathy",
+        "Primary frozen shoulder (adhesive capsulitis)",
+        "Glenohumeral arthritis",
+        "Calcific tendinitis"
+      ],
+      "confidenceScore": 50
+    },
+    "2940": {
+      "id": "2940",
+      "type": "diagnosis",
+      "title": "Insidious onset, no metabolic comorbidity, high psychosocial risk",
+      "primaryDiagnosis": "Shoulder-origin pathology with insidious onset and no diabetes or thyroid disease (for example rotator cuff tendinopathy). High psychosocial risk: elevated fear-avoidance beliefs (FABQ-PA greater than 15 or FABQ-W greater than 34).",
+      "differentials": [
+        "Rotator cuff tendinopathy",
+        "Primary frozen shoulder (adhesive capsulitis)",
+        "Glenohumeral arthritis",
+        "Calcific tendinitis"
+      ],
+      "confidenceScore": 50
+    },
+    "2950": {
+      "id": "2950",
+      "type": "diagnosis",
+      "title": "Insidious onset, metabolic comorbidity, low psychosocial risk",
+      "primaryDiagnosis": "Insidious-onset shoulder pathology with diabetes mellitus and/or thyroid disease, which raise the risk of primary frozen shoulder (adhesive capsulitis). Low psychosocial risk.",
+      "differentials": [
+        "Primary frozen shoulder (adhesive capsulitis)",
+        "Rotator cuff tendinopathy",
+        "Glenohumeral arthritis",
+        "Calcific tendinitis"
+      ],
+      "confidenceScore": 65
+    },
+    "2960": {
+      "id": "2960",
+      "type": "diagnosis",
+      "title": "Insidious onset, metabolic comorbidity, high psychosocial risk",
+      "primaryDiagnosis": "Insidious-onset shoulder pathology with diabetes mellitus and/or thyroid disease, which raise the risk of primary frozen shoulder (adhesive capsulitis). High psychosocial risk: elevated fear-avoidance beliefs (FABQ-PA greater than 15 or FABQ-W greater than 34). Combined metabolic and psychosocial complexity.",
+      "differentials": [
+        "Primary frozen shoulder (adhesive capsulitis)",
+        "Rotator cuff tendinopathy",
+        "Glenohumeral arthritis",
+        "Calcific tendinitis"
+      ],
+      "confidenceScore": 65
+    }
+  }
+}
