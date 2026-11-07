@@ -45,6 +45,13 @@ from collections import Counter
 from dataclasses import dataclass, field, asdict
 from pathlib import Path
 
+if __package__:
+    from . import text_boundaries
+else:
+    import text_boundaries
+
+join_lines = text_boundaries.join_lines
+
 try:
     import pymupdf as fitz  # PyMuPDF >= 1.24.3
 except ImportError:  # older installs
@@ -659,6 +666,35 @@ def order_layout(blocks: list[Block], report: dict) -> list[Block]:
                           max(b.bbox[2] for b in contents),max(b.bbox[3] for b in contents))
                     items.append(Block(page,rect,0,0,[],10,False,False,0,kind='placeholder'))
             ordered=[b for b in walk(items) if b.kind!='placeholder']
+            if region == 'main':
+                # A figure can force a paragraph into the next column before
+                # later text resumes below the figure in the first column.
+                # Put that continuation beside its source before assembling
+                # sections, or it may attach to a later heading instead.
+                obstacles = report.get('page_obstacles', {}).get(str(page + 1), [])
+                for continuation in list(ordered):
+                    if (continuation.kind != 'text' or continuation.y0n >= .4
+                            or not text_boundaries.begins_with_continuation(continuation.text)):
+                        continue
+                    index = ordered.index(continuation)
+                    for source_index in range(index - 2, -1, -1):
+                        source = ordered[source_index]
+                        if (source.kind != 'text' or source.n_words < 12
+                                or text_boundaries.is_boundary_label(source.text)
+                                or source.column == continuation.column
+                                or source.bbox[2] + 15 >= continuation.bbox[0]
+                                or re.search(r'[.!?][)\u201d\u2019"]*$', source.text)):
+                            continue
+                        figure_below = any(
+                            0 <= rect[1] - source.bbox[3] <= 30
+                            and rect[3] - rect[1] > 100
+                            and min(rect[2], source.bbox[2]) - max(rect[0], source.bbox[0]) > 30
+                            for rect in obstacles
+                        )
+                        if figure_below:
+                            ordered.pop(index)
+                            ordered.insert(source_index + 1, continuation)
+                            break
             override = report.get('_page_order_overrides',{}).get(str(page+1)) if region=='main' else None
             if override is not None:
                 by_id={b.source_id:b for b in ordered}
@@ -846,20 +882,6 @@ def normalise(text: str, cfg: Config) -> str:
     return text.strip()
 
 
-def join_lines(lines: list[str], compound_prefixes=None) -> str:
-    prefixes={'self','well','ill'} if compound_prefixes is None else set(compound_prefixes)
-    out = ""
-    for ln in lines:
-        if not out:
-            out = ln
-        elif out.endswith("-") and len(out) > 1 and out[-2].isalpha() and ln[:1].islower():
-            stem=re.search(r'([A-Za-z]+)-$',out)
-            out = (out if stem and stem[1].lower() in prefixes else out[:-1])+ln
-        else:
-            out += " " + ln
-    return out
-
-
 def block_to_units(b: Block, cfg=None) -> list[str]:
     """Split a block into paragraph units (bullets / numbered steps start new units)."""
     units, cur = [], []
@@ -935,13 +957,23 @@ def assemble(blocks: list[Block], cfg: Config, report: dict, book: str):
     def can_continue(a,b,prev,p):
         if a is None or a.region != b.region or abs(a.size-b.size)>1.0:
             return False
+        if text_boundaries.is_boundary_label(p):
+            return False
+        if a.page != b.page and prev.lstrip().startswith('- '):
+            return False
         if (re.search(r'[.!?][)\u201d\u2019"]*$',prev) or BULLET_RE.match(p) or NUMBERED_RE.match(p)):
             return False
         # A continuation can begin with a number, e.g. "30 to 60 seconds".
         same_source = (a.page==b.page and a.source_id and
                        a.source_id.rsplit('-g',1)[0]==b.source_id.rsplit('-g',1)[0])
         function_word = re.search(r'\b(the|a|an|and|or|of|to|with|for|in|by|as|at|from|than|that|is|are)$',prev,re.I)
-        if not (p.lstrip('(')[:1].islower() or p[:1].isdigit() or prev.endswith('-') or same_source or function_word):
+        open_parenthesis_at_column_edge = (
+            a.page == b.page and a.column != b.column
+            and a.y1n > .8 and b.y0n < .5
+            and prev.count('(') > prev.count(')')
+        )
+        if not (p.lstrip('(')[:1].islower() or p[:1].isdigit() or prev.endswith('-')
+                or same_source or function_word or open_parenthesis_at_column_edge):
             return False
         if same_source and abs(a.bbox[1]-b.bbox[1])<2 and prev.rstrip().endswith(':'):
             return True
@@ -1014,12 +1046,15 @@ def assemble(blocks: list[Block], cfg: Config, report: dict, book: str):
             if skip_level is not None:
                 b.kind,b.reason = 'dropped','skipped_section'
                 continue
-            if current is None:
-                current = record(b)
             for u in block_to_units(b,cfg):
                 p = normalise(u,cfg)
                 if not p:
                     continue
+                if text_boundaries.is_boundary_label(p):
+                    b.kind, b.reason = 'dropped', 'box_number_label'
+                    continue
+                if current is None:
+                    current = record(b)
                 paras = current['paragraphs']
                 if paras and pending_label is None and can_continue(previous,b,paras[-1]['text'],p):
                     paras[-1]['text'] = normalise(join_lines([paras[-1]['text'],p],cfg.compound_prefixes),cfg)
@@ -1052,6 +1087,58 @@ def assemble(blocks: list[Block], cfg: Config, report: dict, book: str):
             n = node(label,99,first,base[-1][1] if base else None,'callout')
             base = base+[(99,n['node_id'])]
         consume(flow,base)
+
+    # Page-spanning prose can be separated by figure or table headings. Move the
+    # first narrative paragraph on the next page back to its source section when
+    # both text boundaries show a continuation. Never invent absent PDF text.
+    for r in records:
+        if r['region'] != 'main' or not r['paragraphs']:
+            continue
+        for p in list(r['paragraphs']):
+            if not text_boundaries.has_dangling_prose_end(p['text']):
+                continue
+            later = r['paragraphs'][r['paragraphs'].index(p) + 1:]
+            if any(not text_boundaries.is_boundary_label(item['text']) for item in later):
+                continue
+            end_page = p['sources'][-1]['page']
+            candidates = [
+                (other, candidate) for other in records if other['region'] == 'main'
+                for candidate in other['paragraphs']
+                if candidate is not p and candidate['sources'][0]['page'] == end_page + 1
+                and text_boundaries.begins_with_continuation(candidate['text'])
+            ]
+            # A word split at the page edge resumes in the first prose column.
+            # Record order can instead place unrelated right-column prose first.
+            if p['text'].endswith('-'):
+                candidates.sort(key=lambda item: (
+                    item[1]['sources'][0]['bbox'][0], item[1]['sources'][0]['bbox'][1]
+                ))
+            following = candidates[0] if candidates else None
+            if following:
+                other, continuation = following
+                p['text'] = normalise(join_lines(
+                    [p['text'], continuation['text']], cfg.compound_prefixes), cfg)
+                p['sources'].extend(continuation['sources'])
+                p['join_evidence'].extend(continuation['join_evidence'])
+                p['join_evidence'].append('cross_page_continuation')
+                other['paragraphs'].remove(continuation)
+            elif end_page == report['pages']:
+                complete = text_boundaries.completed_sentence_prefix(p['text'])
+                report.setdefault('incomplete_fragments_dropped', []).append({
+                    'paragraph_id': p['paragraph_id'],
+                    'source_ids': [source['source_id'] for source in p['sources']],
+                    'text': p['text'][len(complete):].strip(),
+                })
+                if complete:
+                    p['text'] = complete
+                else:
+                    r['paragraphs'].remove(p)
+
+    # Sources, rather than old section boundaries, determine page spans after repair.
+    for r in records:
+        pages = [source['page'] for p in r['paragraphs'] for source in p['sources']]
+        if pages:
+            r['page_start'], r['page_end'] = min(pages), max(pages)
 
     # Repeated factual instructions may be intentional across phases. Retain
     # them, but do not label their source quality as automatically verified.
@@ -1166,7 +1253,12 @@ def process_book(path: Path, out_root: Path, cfg: Config, debug: bool = False) -
         for b in blocks:
             f.write(json.dumps(asdict(b),ensure_ascii=False)+'\n')
     report['review_items'] = len(issues)
-    report['quality_status'] = 'needs_review' if issues or report.get('layout_warnings') or report.get('extraction_warnings') else 'checks_passed'
+    report['quality_status'] = (
+        'needs_review'
+        if issues or report.get('layout_warnings') or report.get('extraction_warnings')
+        or report.get('incomplete_fragments_dropped')
+        else 'checks_passed'
+    )
     report['hierarchy_method'] = 'PDF outline plus typography heuristics; inferred relationships require review'
     report['lowercase_paragraph_starts'] = sum('lowercase_start' in i['flags'] for i in issues)
     report['possible_residual_citations'] = sum('possible_residual_citation' in i['flags'] for i in issues)
