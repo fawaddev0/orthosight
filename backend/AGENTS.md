@@ -55,7 +55,9 @@ backend/
 │   │   ├── models.py         # Pydantic models (LayerNode, DiagnosticInput, etc.)
 │   │   └── exceptions.py     # Custom error hierarchy
 │   ├── api/
-│   └── rag/
+│   └──rag/
+│      └──books/              # Books used for extracting workouts for physio conditions
+
 └── tests/
     ├── test_core.py          # DecisionTree class unit tests
     ├── test_api.py           # FastAPI endpoint tests
