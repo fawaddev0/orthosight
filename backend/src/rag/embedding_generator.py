@@ -1,52 +1,66 @@
-"""Index book_preprocessor.py sections.jsonl output in Qdrant.
-
-Run: python -m rag.embedding_generator processed/ --category rehab_exercise
-"""
+"""Embed complete, reviewed book sections in a versioned Qdrant collection."""
 
 from __future__ import annotations
 
 import argparse
 import os
+import re
 import uuid
 from collections.abc import Callable, Iterator
 from pathlib import Path
+from typing import Protocol, cast
 
+import numpy as np
+from numpy.typing import NDArray
 from pydantic import BaseModel, Field
+from qdrant_client import QdrantClient, models
 
-COLLECTION = "physio_sections_v1"
-EMBED_MODEL = "BAAI/bge-small-en-v1.5"
-BGE_QUERY_PREFIX = "Represent this sentence for searching relevant passages: "
-MAX_CHUNK_TOKENS = 350
-
-
-class Source(BaseModel):
-    page: int
+EMBED_MODEL = "BAAI/bge-m3"
+VECTOR_SIZE = 1024
+MAX_INPUT_TOKENS = 8192
+COLLECTION_PREFIX = "physio_sections_"
+ACTIVE_ALIAS = "physio_sections_active"
 
 
-class Paragraph(BaseModel):
-    text: str
-    sources: list[Source] = Field(default_factory=list)
+class Tokenizer(Protocol):
+    def encode(self, text: str, *, add_special_tokens: bool) -> list[int]: ...
+
+
+class EmbeddingModel(Protocol):
+    tokenizer: Tokenizer
+    max_seq_length: int
+
+    def encode(self, texts: list[str], *, normalize_embeddings: bool) -> NDArray[np.float32]: ...
 
 
 class Section(BaseModel):
+    book: str = Field(min_length=1)
+    section_id: str = Field(min_length=1)
+    heading_path: list[str]
+    text: str
+    page_start: int = Field(ge=1)
+    page_end: int = Field(ge=1)
+    ready_for_embedding: bool
+
+
+class IndexedSection(BaseModel):
     book: str
     section_id: str
     heading_path: list[str]
-    paragraphs: list[Paragraph]
+    text: str
     page_start: int
     page_end: int
 
+    @property
+    def embedding_text(self) -> str:
+        heading = " > ".join(self.heading_path)
+        return f"{heading}\n{self.text}" if heading else self.text
 
-class Chunk(BaseModel):
-    chunk_id: str
-    parent_text: str
-    section_path: str
-    book: str
-    pdf_page: int
-    page_start: int
-    page_end: int
-    body_part: str
-    category: str
+
+def collection_name(version: str) -> str:
+    if re.fullmatch(r"v[1-9][0-9]*", version) is None:
+        raise ValueError("Collection version must look like v1 or v2")
+    return f"{COLLECTION_PREFIX}{version}"
 
 
 def read_sections(path: Path) -> Iterator[Section]:
@@ -63,122 +77,116 @@ def read_sections(path: Path) -> Iterator[Section]:
                         raise ValueError(f"{file}:{line_number}: invalid section") from exc
 
 
-def chunks_for_section(
-    section: Section,
-    encode: Callable[[str], list[int]],
-    decode: Callable[[list[int]], str],
-    category: str,
-    body_part: str,
-    max_tokens: int = MAX_CHUNK_TOKENS,
-) -> list[Chunk]:
-    path = " > ".join(section.heading_path)
-    budget = max_tokens - len(encode(path)) - 2
-    if budget < 1:
-        raise ValueError(f"Heading path exceeds token budget: {section.section_id}")
-    pieces: list[tuple[str, int, int]] = []
-    for paragraph in section.paragraphs:
-        token_ids = encode(paragraph.text)
-        if not token_ids:
-            continue
-        pages = [source.page for source in paragraph.sources]
-        first = min(pages, default=section.page_start)
-        last = max(pages, default=section.page_end)
-        for offset in range(0, len(token_ids), budget):
-            text = decode(token_ids[offset:offset + budget]).strip()
-            if text:
-                pieces.append((text, first, last))
-
-    chunks: list[Chunk] = []
-    group: list[str] = []
-    group_pages: list[tuple[int, int]] = []
-    size = 0
-
-    def flush() -> None:
-        nonlocal size
-        if not group:
-            return
-        index = len(chunks)
-        chunks.append(Chunk(
-            chunk_id=f"{section.section_id}:c{index:04d}",
-            parent_text="\n\n".join(group),
-            section_path=path,
-            book=section.book,
-            pdf_page=group_pages[0][0],
-            page_start=min(start for start, _ in group_pages),
-            page_end=max(end for _, end in group_pages),
-            body_part=body_part,
-            category=category,
-        ))
-        group.clear()
-        group_pages.clear()
-        size = 0
-
-    for text, first, last in pieces:
-        cost = len(encode(text))
-        if group and size + cost + 2 > budget:
-            flush()
-        group.append(text)
-        group_pages.append((first, last))
-        size += cost + (2 if len(group) > 1 else 0)
-    flush()
-    return chunks
-
-
-def index_sections(path: Path, category: str, body_part: str) -> int:
-    from qdrant_client import QdrantClient, models
-    from sentence_transformers import SentenceTransformer
-
-    model = SentenceTransformer(EMBED_MODEL)
-    tokenizer = model.tokenizer
-    client = QdrantClient(url=os.environ["QDRANT_URL"], api_key=os.environ.get("QDRANT_API_KEY"))
-    dimension = model.get_sentence_embedding_dimension()
-    if dimension is None:
-        raise RuntimeError("Embedding model did not report vector dimension")
-    if not client.collection_exists(COLLECTION):
-        client.create_collection(COLLECTION, vectors_config=models.VectorParams(size=dimension, distance=models.Distance.COSINE))
-        for field in ("body_part", "category", "book"):
-            client.create_payload_index(COLLECTION, field_name=field, field_schema=models.PayloadSchemaType.KEYWORD)
-
-    batch: list[Chunk] = []
-    total = 0
-
-    def upload() -> None:
-        nonlocal total
-        if not batch:
-            return
-        texts = [(chunk.section_path + "\n" + chunk.parent_text).strip() for chunk in batch]
-        vectors = model.encode(texts, normalize_embeddings=True, batch_size=64)
-        points = [models.PointStruct(
-            id=str(uuid.uuid5(uuid.NAMESPACE_URL, chunk.chunk_id)),
-            vector=vector.tolist(),
-            payload=chunk.model_dump(),
-        ) for chunk, vector in zip(batch, vectors, strict=True)]
-        client.upsert(COLLECTION, points=points, wait=True)
-        total += len(batch)
-        batch.clear()
-
+def prepare_sections(
+    path: Path,
+    count_tokens: Callable[[str], int],
+    max_tokens: int = MAX_INPUT_TOKENS,
+) -> list[IndexedSection]:
+    """Validate all input before any vector database writes."""
+    records: list[IndexedSection] = []
+    seen: set[str] = set()
     for section in read_sections(path):
-        for chunk in chunks_for_section(
-            section,
-            lambda text: tokenizer.encode(text, add_special_tokens=False),
-            lambda ids: tokenizer.decode(ids, skip_special_tokens=True),
-            category,
-            body_part,
-        ):
-            batch.append(chunk)
-            if len(batch) >= 128:
-                upload()
-    upload()
-    return total
+        if not section.ready_for_embedding:
+            continue
+        if section.section_id in seen:
+            raise ValueError(f"Duplicate section ID: {section.section_id}")
+        seen.add(section.section_id)
+        record = IndexedSection.model_validate(section.model_dump(exclude={"ready_for_embedding"}))
+        if not record.text.strip():
+            raise ValueError(f"Empty ready section: {record.section_id}")
+        if count_tokens(record.embedding_text) > max_tokens:
+            raise ValueError(f"Section exceeds {max_tokens} embedding tokens: {record.section_id}")
+        records.append(record)
+    if not records:
+        raise ValueError("No sections marked ready_for_embedding")
+    return records
+
+
+def index_sections(
+    path: Path,
+    version: str,
+    *,
+    model: EmbeddingModel | None = None,
+    client: QdrantClient | None = None,
+) -> int:
+    """Create new collection only after every ready section passes preflight."""
+    if model is None:
+        from sentence_transformers import SentenceTransformer
+
+        model = cast(EmbeddingModel, SentenceTransformer(EMBED_MODEL))
+
+    name = collection_name(version)
+    records = prepare_sections(
+        path,
+        lambda value: len(model.tokenizer.encode(value, add_special_tokens=True)),
+        max_tokens=min(MAX_INPUT_TOKENS, model.max_seq_length),
+    )
+    if client is None:
+        client = QdrantClient(url=os.environ["QDRANT_URL"], api_key=os.environ.get("QDRANT_API_KEY"))
+    if client.collection_exists(name):
+        raise ValueError(f"Collection already exists: {name}; use a new version")
+    client.create_collection(name, vectors_config=models.VectorParams(size=VECTOR_SIZE, distance=models.Distance.COSINE))
+    for start in range(0, len(records), 16):
+        batch = records[start:start + 16]
+        vectors = model.encode([record.embedding_text for record in batch], normalize_embeddings=True)
+        points = [
+            models.PointStruct(
+                id=str(uuid.uuid5(uuid.NAMESPACE_URL, record.section_id)),
+                vector=vector.tolist(),
+                payload=record.model_dump(),
+            )
+            for record, vector in zip(batch, vectors, strict=True)
+        ]
+        client.upsert(name, points=points, wait=True)
+    count = client.count(name, exact=True).count
+    if count != len(records):
+        raise RuntimeError(f"Indexed {count} sections, expected {len(records)}")
+    return count
+
+
+def activate_collection(
+    version: str,
+    expected_count: int,
+    *,
+    client: QdrantClient | None = None,
+) -> None:
+    """Switch active alias after checking collection completeness and dimensions."""
+    if expected_count < 1:
+        raise ValueError("Expected section count must be positive")
+    name = collection_name(version)
+    if client is None:
+        client = QdrantClient(url=os.environ["QDRANT_URL"], api_key=os.environ.get("QDRANT_API_KEY"))
+    info = client.get_collection(name)
+    if client.count(name, exact=True).count != expected_count:
+        raise ValueError(f"Collection {name} has unexpected section count")
+    params = info.config.params.vectors
+    if not isinstance(params, models.VectorParams) or params.size != VECTOR_SIZE:
+        raise ValueError(f"Collection {name} has incompatible vector size")
+    aliases = client.get_aliases().aliases
+    actions: list[models.AliasOperations] = []
+    if any(alias.alias_name == ACTIVE_ALIAS for alias in aliases):
+        actions.append(models.DeleteAliasOperation(delete_alias=models.DeleteAlias(alias_name=ACTIVE_ALIAS)))
+    actions.append(models.CreateAliasOperation(create_alias=models.CreateAlias(collection_name=name, alias_name=ACTIVE_ALIAS)))
+    client.update_collection_aliases(change_aliases_operations=actions)
 
 
 def main() -> None:
-    parser = argparse.ArgumentParser(description="Index preprocessed book sections")
-    parser.add_argument("path", type=Path, help="sections.jsonl file or processed books directory")
-    parser.add_argument("--category", choices=("rehab_exercise", "reference"), default="reference")
-    parser.add_argument("--body-part", default="general", help="Metadata for all sections in this run")
+    parser = argparse.ArgumentParser(description="Index complete book sections")
+    parser.add_argument("path", type=Path, nargs="?", help="sections.jsonl file or processed books directory")
+    parser.add_argument("--version", required=True, help="Collection version, such as v1")
+    parser.add_argument("--activate", action="store_true", help="Point active alias to this verified collection")
+    parser.add_argument("--expected-count", type=int, help="Required section count when activating an existing collection")
     args = parser.parse_args()
-    print(f"Indexed {index_sections(args.path, args.category, args.body_part)} chunks in {COLLECTION}")
+    if args.path is None:
+        if not args.activate or args.expected_count is None:
+            parser.error("Use a path to index, or --activate --expected-count to promote an existing collection")
+        activate_collection(args.version, args.expected_count)
+        print(f"Activated {collection_name(args.version)}")
+        return
+    count = index_sections(args.path, args.version)
+    if args.activate:
+        activate_collection(args.version, count)
+    print(f"Indexed {count} sections in {collection_name(args.version)}")
 
 
 if __name__ == "__main__":
