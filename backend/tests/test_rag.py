@@ -5,7 +5,7 @@ from pathlib import Path
 
 import numpy as np
 import pytest
-from qdrant_client import QdrantClient
+from qdrant_client import QdrantClient, models
 
 from rag.embedding_generator import (
     ACTIVE_ALIAS,
@@ -15,6 +15,7 @@ from rag.embedding_generator import (
     index_sections,
     prepare_sections,
 )
+from rag.retriever import retrieve
 
 
 def _write_sections(path: Path, rows: list[dict[str, object]]) -> None:
@@ -102,3 +103,69 @@ def test_index_rejects_model_that_would_truncate_sections(tmp_path: Path) -> Non
     with pytest.raises(ValueError, match="4 embedding tokens"):
         index_sections(path, "v1", model=model, client=client)
     assert not client.collection_exists(collection_name("v1"))
+
+
+class _QueryEmbedder:
+    def encode(self, text: str, *, normalize_embeddings: bool) -> np.ndarray:
+        vector = np.zeros(VECTOR_SIZE, dtype=np.float32)
+        vector[0] = 1.0
+        return vector
+
+
+class _PairTokenizer:
+    def encode(self, query: str, passage: str, *, add_special_tokens: bool, truncation: bool) -> list[int]:
+        return list(range(len((query + " " + passage).split())))
+
+
+class _Reranker:
+    tokenizer = _PairTokenizer()
+    max_length = 8192
+
+    def __init__(self) -> None:
+        self.pairs: list[list[str]] = []
+
+    def predict(self, pairs: list[list[str]]) -> np.ndarray:
+        self.pairs = pairs
+        return np.array([float(pair[1].split("rank ")[-1]) for pair in pairs], dtype=np.float32)
+
+
+def test_retrieve_reranks_full_sections_and_excludes_surgical_book() -> None:
+    client = QdrantClient(":memory:")
+    client.create_collection(ACTIVE_ALIAS, vectors_config=models.VectorParams(size=VECTOR_SIZE, distance=models.Distance.COSINE))
+    for rank in range(6):
+        client.upsert(ACTIVE_ALIAS, points=[models.PointStruct(
+            id=rank + 1,
+            vector=[1.0] + [0.0] * (VECTOR_SIZE - 1),
+            payload={
+                "book": "shoulder_rotatory_cuff",
+                "section_id": f"section-{rank}",
+                "heading_path": ["Rotator cuff", "Exercise"],
+                "text": f"Rotator cuff home exercise. Full sentence. rank {rank}",
+                "page_start": 1,
+                "page_end": 1,
+            },
+        )])
+    client.upsert(ACTIVE_ALIAS, points=[models.PointStruct(
+        id=20,
+        vector=[1.0] + [0.0] * (VECTOR_SIZE - 1),
+        payload={
+            "book": "shoulder_surgical_stuff",
+            "section_id": "surgery",
+            "heading_path": ["Rotator cuff", "Surgery"],
+            "text": "Rotator cuff postoperative exercise. rank 20",
+            "page_start": 1,
+            "page_end": 1,
+        },
+    )])
+    reranker = _Reranker()
+
+    hits = retrieve("4820", client=client, embedder=_QueryEmbedder(), reranker=reranker)
+
+    assert [hit.section.section_id for hit in hits] == ["section-5", "section-4", "section-3", "section-2"]
+    assert all("Full sentence." in pair[1] for pair in reranker.pairs)
+    assert all(hit.section.book != "shoulder_surgical_stuff" for hit in hits)
+
+
+def test_retrieve_rejects_referral_diagnosis_before_search() -> None:
+    with pytest.raises(ValueError, match="Unsupported diagnosis"):
+        retrieve("4910")
