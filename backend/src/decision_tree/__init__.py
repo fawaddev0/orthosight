@@ -3,6 +3,7 @@
 from .core import DecisionTree
 from .exceptions import (
     DecisionTreeError,
+    InvalidChoiceError,
     InvalidLayerError,
     InvalidTreeError,
     NodeNotFoundError,
@@ -21,6 +22,7 @@ __all__ = [
     "DecisionTree",
     "DecisionTreeError",
     "DiagnosisNode",
+    "InvalidChoiceError",
     "InvalidLayerError",
     "InvalidTreeError",
     "Layer",

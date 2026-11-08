@@ -7,7 +7,12 @@ from typing import ClassVar
 
 from pydantic import ValidationError
 
-from .exceptions import InvalidLayerError, InvalidTreeError, NodeNotFoundError
+from .exceptions import (
+    InvalidChoiceError,
+    InvalidLayerError,
+    InvalidTreeError,
+    NodeNotFoundError,
+)
 from .models import DiagnosisNode, Layer, Node, QuestionNode, ScreeningNode
 
 
@@ -75,6 +80,39 @@ class DecisionTree:
             return self._layers[layer_id].model_copy(deep=True)
         except KeyError as exc:
             raise InvalidLayerError(layer_id) from exc
+
+    def get_root_node(self, layer_id: int = 1) -> Node:
+        """Return the root node for a layer."""
+        layer = self.get_layer(layer_id)
+        return self.get_node(layer.root_node_id)
+
+    def get_next_node(self, node_id: str, answer: str | None = None) -> Node | None:
+        """Resolve an answer or diagnosis bridge to the next node."""
+        node = self.get_node(node_id)
+        if isinstance(node, ScreeningNode):
+            if answer is None:
+                return None
+            if answer == "none":
+                target_node_id = node.default_next_node_id
+            else:
+                flag = next((flag for flag in node.red_flags if flag.id == answer), None)
+                if flag is None:
+                    raise InvalidChoiceError(node_id, answer)
+                target_node_id = flag.next_node_id
+        elif isinstance(node, QuestionNode):
+            if answer is None:
+                return None
+            option = next((option for option in node.options if option.value == answer), None)
+            if option is None:
+                raise InvalidChoiceError(node_id, answer)
+            target_node_id = option.next_node_id
+        else:
+            if answer is not None:
+                raise InvalidChoiceError(node_id, answer)
+            target_node_id = self._BRIDGES.get(node.id)
+            if target_node_id is None:
+                return None
+        return self.get_node(target_node_id)
 
     def _validate_graph(self) -> None:
         for layer_id, layer in self._layers.items():
