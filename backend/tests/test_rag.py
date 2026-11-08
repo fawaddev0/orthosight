@@ -7,15 +7,18 @@ import numpy as np
 import pytest
 from qdrant_client import QdrantClient, models
 
+from decision_tree.models import DiagnosisNode
 from rag.embedding_generator import (
     ACTIVE_ALIAS,
     VECTOR_SIZE,
+    IndexedSection,
     activate_collection,
     collection_name,
     index_sections,
     prepare_sections,
 )
-from rag.retriever import retrieve
+from rag.response_generator import AnswerRequest, QuestionnaireResponse, generate_plan
+from rag.retriever import RetrievedSection, retrieve
 
 
 def _write_sections(path: Path, rows: list[dict[str, object]]) -> None:
@@ -169,3 +172,148 @@ def test_retrieve_reranks_full_sections_and_excludes_surgical_book() -> None:
 def test_retrieve_rejects_referral_diagnosis_before_search() -> None:
     with pytest.raises(ValueError, match="Unsupported diagnosis"):
         retrieve("4910")
+
+
+class _Generator:
+    def __init__(self, response: dict[str, object]) -> None:
+        self.response = json.dumps(response)
+        self.prompt = ""
+
+    def count_tokens(self, system: str, user: str) -> int:
+        return len((system + user).split())
+
+    def generate(self, system: str, user: str) -> str:
+        self.prompt = user
+        return self.response
+
+
+def _answer_request(diagnosis_id: str = "4820") -> AnswerRequest:
+    diagnosis = DiagnosisNode(
+        id=diagnosis_id,
+        type="diagnosis",
+        title="Rotator cuff tendinopathy",
+        primaryDiagnosis="Conservative treatment",
+        differentials=(),
+        confidenceScore=75,
+    )
+    return AnswerRequest(
+        diagnosis=diagnosis,
+        patient_history="Prior right shoulder pain; no surgery.",
+        questionnaire=[
+            QuestionnaireResponse(question_id="q1", question="Pain duration?", answer="Six weeks"),
+            QuestionnaireResponse(question_id="q2", question="Pain with lifting?", answer="Yes"),
+        ],
+    )
+
+
+def _exercise_hit() -> RetrievedSection:
+    return RetrievedSection(
+        section=IndexedSection(
+            book="shoulder_rotatory_cuff",
+            section_id="exercise-1",
+            heading_path=["Rotator cuff", "Exercise"],
+            text="Pendulum exercise: move arm gently. Perform 3 sets of 10 repetitions.",
+            page_start=8,
+            page_end=8,
+        ),
+        score=0.9,
+    )
+
+
+def test_answer_uses_full_patient_input_and_verified_sets_and_reps() -> None:
+    generator = _Generator({"exercises": [{
+        "name": "Pendulum exercise",
+        "sets": 3,
+        "reps": 10,
+        "instructions": "move arm gently",
+        "source_section_id": "exercise-1",
+        "evidence_quote": "Pendulum exercise: move arm gently. Perform 3 sets of 10 repetitions.",
+    }]})
+    request = _answer_request()
+
+    plan = generate_plan(request, retrieve_sections=lambda condition: [_exercise_hit()], generator=generator)
+
+    assert plan.status == "ready"
+    assert [(exercise.sets, exercise.reps) for exercise in plan.exercises] == [(3, 10)]
+    assert (plan.exercises[0].source_page_start, plan.exercises[0].source_page_end) == (8, 8)
+    assert request.patient_history in generator.prompt
+    assert all(response.answer in generator.prompt for response in request.questionnaire)
+    assert request.diagnosis.id in generator.prompt
+
+
+@pytest.mark.parametrize("sets,reps", [(3, 12), (3, None)])
+def test_answer_rejects_unsupported_or_missing_dosage(sets: int, reps: int | None) -> None:
+    generator = _Generator({"exercises": [{
+        "name": "Pendulum exercise",
+        "sets": sets,
+        "reps": reps,
+        "instructions": "move arm gently",
+        "source_section_id": "exercise-1",
+        "evidence_quote": "Pendulum exercise: move arm gently. Perform 3 sets of 10 repetitions.",
+    }]})
+
+    plan = generate_plan(_answer_request(), retrieve_sections=lambda condition: [_exercise_hit()], generator=generator)
+
+    assert plan.status == "insufficient_evidence"
+    assert plan.exercises == []
+
+
+def test_answer_rejects_referral_diagnosis_before_retrieval() -> None:
+    with pytest.raises(ValueError, match="Unsupported diagnosis"):
+        generate_plan(_answer_request("4910"), retrieve_sections=lambda condition: [_exercise_hit()])
+
+
+def test_answer_rejects_postoperative_exercise_for_conservative_diagnosis() -> None:
+    hit = _exercise_hit()
+    postoperative = RetrievedSection(
+        section=hit.section.model_copy(update={
+            "heading_path": ["Rotator cuff", "Postoperative exercise"],
+            "text": "Pendulum exercise: move arm gently. Perform 3 sets of 10 repetitions.",
+        }),
+        score=hit.score,
+    )
+    generator = _Generator({"exercises": [{
+        "name": "Pendulum exercise",
+        "sets": 3,
+        "reps": 10,
+        "instructions": "move arm gently",
+        "source_section_id": "exercise-1",
+        "evidence_quote": "Pendulum exercise: move arm gently. Perform 3 sets of 10 repetitions.",
+    }]})
+
+    plan = generate_plan(_answer_request(), retrieve_sections=lambda condition: [postoperative], generator=generator)
+
+    assert plan.status == "insufficient_evidence"
+    assert plan.exercises == []
+    assert generator.prompt == ""
+
+
+def test_answer_rejects_evidence_for_other_condition() -> None:
+    generator = _Generator({"exercises": [{
+        "name": "Pendulum exercise",
+        "sets": 3,
+        "reps": 10,
+        "instructions": "move arm gently",
+        "source_section_id": "exercise-1",
+        "evidence_quote": "Pendulum exercise: move arm gently. Perform 3 sets of 10 repetitions.",
+    }]})
+
+    plan = generate_plan(_answer_request("4810"), retrieve_sections=lambda condition: [_exercise_hit()], generator=generator)
+
+    assert plan.status == "insufficient_evidence"
+    assert generator.prompt == ""
+
+
+def test_answer_does_not_generate_when_book_lacks_sets_and_reps() -> None:
+    hit = _exercise_hit()
+    no_dosage = RetrievedSection(
+        section=hit.section.model_copy(update={"text": "Rotator cuff pendulum exercise: move arm gently."}),
+        score=hit.score,
+    )
+    generator = _Generator({"exercises": []})
+
+    plan = generate_plan(_answer_request(), retrieve_sections=lambda condition: [no_dosage], generator=generator)
+
+    assert plan.status == "insufficient_evidence"
+    assert plan.exercises == []
+    assert generator.prompt == ""
