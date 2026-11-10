@@ -1,181 +1,181 @@
 {
   "id": "1",
-  "version": "2.0.0",
+  "version": "2.1.0",
   "rootNodeId": "100",
   "nodes": {
     "100": {
       "id": "100",
       "type": "screening",
-      "title": "Red flag screening: shoulder or neck symptoms",
+      "title": "Please tell us if any of the following apply to you.",
       "redFlags": [
         {
           "id": "101",
-          "text": "Gait disturbance, including unstable or unsteady gait, gait instability, or new-onset gait imbalance",
+          "text": "Unsteady walking, loss of balance, or sudden difficulty staying upright.",
           "nextNodeId": "999"
         },
         {
           "id": "102",
-          "text": "Bowel or bladder changes, including bladder or bowel incontinence, urinary urgency, or bladder dysfunction",
+          "text": "Sudden loss of bowel or bladder control, leaking urine, or inability to pass urine.",
           "nextNodeId": "999"
         },
         {
           "id": "103",
-          "text": "Positive Hoffman's sign (Tromner sign)",
+          "text": "Dropping objects frequently or struggling with fine finger tasks like buttoning shirts or turning keys.",
           "nextNodeId": "999"
         },
         {
           "id": "104",
-          "text": "Hyperreflexia, including generalized hyperreflexia",
+          "text": "Uncontrolled muscle twitching, jumping, or sudden spasms in your arms or legs.",
           "nextNodeId": "999"
         },
         {
           "id": "105",
-          "text": "Positive Babinski sign",
+          "text": "Frequent tripping or feeling like your feet catch on the floor when walking.",
           "nextNodeId": "999"
         },
         {
           "id": "106",
-          "text": "Clonus",
+          "text": "Rapid, rhythmic, uncontrollable shaking in your foot or ankle when resting.",
           "nextNodeId": "999"
         },
         {
           "id": "107",
-          "text": "Inverted supinator reflex",
+          "text": "Sudden weakness when twisting jar lids or turning doorknobs.",
           "nextNodeId": "999"
         },
         {
           "id": "108",
-          "text": "Loss of hand dexterity or hand clumsiness",
+          "text": "Hand feels heavy, clumsy, or unable to make a tight fist.",
           "nextNodeId": "999"
         },
         {
           "id": "109",
-          "text": "Hand numbness or diffuse paresthesia",
+          "text": "Numbness, tingling, or pins-and-needles spreading through your whole hand or fingers.",
           "nextNodeId": "999"
         },
         {
           "id": "110",
-          "text": "Limb weakness",
+          "text": "Noticeable weakness in an entire arm or leg.",
           "nextNodeId": "999"
         },
         {
           "id": "111",
-          "text": "Sensation of heavy legs",
+          "text": "Unusual heaviness in both legs while walking.",
           "nextNodeId": "999"
         },
         {
           "id": "112",
-          "text": "Progressive motor deficit",
+          "text": "Overall muscle strength getting steadily worse over days or weeks.",
           "nextNodeId": "999"
         },
         {
           "id": "113",
-          "text": "Progressive arm weakness",
+          "text": "Arm weakness getting steadily worse over time.",
           "nextNodeId": "999"
         },
         {
           "id": "114",
-          "text": "Severe or progressive neurological deficits",
+          "text": "Numbness or weakness that is severe or rapidly spreading.",
           "nextNodeId": "999"
         },
         {
           "id": "115",
-          "text": "Severe, unrelenting pain despite guideline-directed treatment",
+          "text": "Severe pain that never stops, even when resting or taking over-the-counter pain relievers.",
           "nextNodeId": "999"
         },
         {
           "id": "116",
-          "text": "Fever",
+          "text": "Fever or chills alongside your shoulder or neck pain.",
           "nextNodeId": "999"
         },
         {
           "id": "117",
-          "text": "Night sweats",
+          "text": "Drenching night sweats.",
           "nextNodeId": "999"
         },
         {
           "id": "118",
-          "text": "Unexplained weight loss",
+          "text": "Unexplained weight loss without dieting.",
           "nextNodeId": "999"
         },
         {
           "id": "119",
-          "text": "Immunosuppression",
+          "text": "Weakened immune system (due to illness, chemotherapy, or immunosuppressive medication).",
           "nextNodeId": "999"
         },
         {
           "id": "120",
-          "text": "Persistent pain at rest",
+          "text": "Constant, intense pain that stays severe even when lying completely flat.",
           "nextNodeId": "999"
         },
         {
           "id": "121",
-          "text": "Tenderness over the vertebrae",
+          "text": "Sharp pain when pressing directly on the bones of your spine.",
           "nextNodeId": "999"
         },
         {
           "id": "122",
-          "text": "Radicular symptoms associated with a traumatic injury",
+          "text": "Pain, numbness, or weakness shooting from neck into arm right after a fall or accident.",
           "nextNodeId": "999"
         },
         {
           "id": "123",
-          "text": "Pain over the clavicle shaft: an occult or stress fracture must always be ruled out, even in the absence of trauma and especially in elderly people",
+          "text": "Sharp bone pain or grinding directly over your collarbone when moving your arm.",
           "nextNodeId": "999"
         },
         {
           "id": "124",
-          "text": "Scapular fracture",
+          "text": "Inability to move arm after a hard blow or fall onto shoulder blade.",
           "nextNodeId": "999"
         },
         {
           "id": "125",
-          "text": "Post-traumatic scapular muscle detachment",
+          "text": "A popping or tearing feeling near shoulder blade during an injury, followed by inability to lift arm.",
           "nextNodeId": "999"
         },
         {
           "id": "126",
-          "text": "Diminished radial pulse, with positional pain worse with neck extension and shoulder abduction, extension, and external rotation",
+          "text": "Hand or arm turns pale, cold, or bluish when lifting your arm overhead or reaching backward.",
           "nextNodeId": "999"
         },
         {
           "id": "127",
-          "text": "Positional paresthesias exacerbated by overhead activity with associated vascular signs",
+          "text": "Tingling or numbness in arm overhead, combined with cold hands or skin color changes.",
           "nextNodeId": "999"
         },
         {
           "id": "128",
-          "text": "Paresthesia and weakness in intrinsic hand muscles due to compression of the brachial plexus, with ipsilateral ptosis, miosis, and anhidrosis (Horner's syndrome), as in Pancoast syndrome",
+          "text": "Hand weakness combined with a droopy eyelid or smaller pupil on the same side of your face.",
           "nextNodeId": "999"
         },
         {
           "id": "129",
-          "text": "Bilateral symptoms, especially following trauma",
+          "text": "Symptoms (numbness, pain, or weakness) affecting both arms or legs simultaneously.",
           "nextNodeId": "999"
         },
         {
           "id": "130",
-          "text": "Involvement of multiple root levels, especially following trauma",
+          "text": "Widespread pain, numbness, and weakness across neck, shoulder blade, arm, and hand after an injury.",
           "nextNodeId": "999"
         },
         {
           "id": "131",
-          "text": "Cancer history or suspicion of malignancy",
+          "text": "History of cancer.",
           "nextNodeId": "999"
         },
         {
           "id": "132",
-          "text": "Recent severe fall or acute trauma",
+          "text": "Recent severe fall, car accident, or direct high-impact injury.",
           "nextNodeId": "999"
         },
         {
           "id": "133",
-          "text": "Acute localized bony tenderness over spine or shoulder complex",
+          "text": "Severe pain when pressing on a specific bone in shoulder or upper back.",
           "nextNodeId": "999"
         },
         {
           "id": "134",
-          "text": "Unexplained structural deformity",
+          "text": "Visible bump, gap, or sudden structural change in collarbone, shoulder, or neck.",
           "nextNodeId": "999"
         }
       ],
@@ -184,17 +184,18 @@
     "200": {
       "id": "200",
       "type": "question",
-      "title": "Differential: cervical provocative tests",
-      "questionText": "Perform the Spurling test (axial compression while extending and rotating the neck toward the symptomatic side; sensitivity 30-50%, specificity 74-93%) and the Arm Squeeze test (sensitivity 96%, specificity 90%). Is either test positive? Both are strongly indicative of cervical radiculopathy.",
+      "title": "Neck vs. Shoulder Origin",
+      "questionText": "Does neck movement send pain down your arm?",
+      "patientText": "Does tilting your head backward or turning your neck toward your sore side cause sharp pain, numbness, or tingling to shoot down your arm?",
       "options": [
         {
           "value": "1",
-          "label": "Spurling test positive and/or Arm Squeeze test positive",
+          "label": "Yes, neck movement sends pain or numbness down my arm.",
           "nextNodeId": "300"
         },
         {
           "value": "2",
-          "label": "Both tests negative (Spurling sensitivity is only moderate, so a negative test does not exclude radiculopathy)",
+          "label": "No, neck movement does not send pain down my arm.",
           "nextNodeId": "210"
         }
       ]
@@ -202,17 +203,17 @@
     "210": {
       "id": "210",
       "type": "question",
-      "title": "Differential: pain radiation",
-      "questionText": "Where does the pain localize and radiate? Intrinsic shoulder pain most commonly localizes to the lateral deltoid region, the acromioclavicular joint, and/or the biceps tendon and bicipital groove. Cervical radiculopathy presents with arm pain originating from the neck and radiating beyond the elbow, with motor and sensory deficits.",
+      "title": "Pain Location and Spread",
+      "questionText": "Where do you feel the pain, and where does it spread?",
       "options": [
         {
           "value": "1",
-          "label": "Pain originates from the neck and radiates beyond the elbow, with motor and sensory deficits",
+          "label": "Pain starts in the neck and spreads past the elbow, with weakness, numbness, or loss of feeling.",
           "nextNodeId": "300"
         },
         {
           "value": "2",
-          "label": "Pain localized to the lateral deltoid region, acromioclavicular joint, or biceps tendon and bicipital groove, without radiation beyond the elbow",
+          "label": "Pain stays at outer shoulder, top of shoulder, or front of upper arm, and does not pass elbow.",
           "nextNodeId": "220"
         }
       ]
@@ -220,17 +221,17 @@
     "220": {
       "id": "220",
       "type": "question",
-      "title": "Differential: night pain",
-      "questionText": "Is nocturnal pain or sleep disturbance present? Nocturnal pain is highly indicative of shoulder pathology (almost 90% of patients with symptomatic rotator cuff tears report nocturnal pain and generalized sleep disturbance). Nocturnal pain is not highly indicative of cervical spine pathology.",
+      "title": "Night Pain",
+      "questionText": "Does pain wake you at night or disturb your sleep?",
       "options": [
         {
           "value": "1",
-          "label": "Nocturnal pain or sleep disturbance present",
+          "label": "Yes, I have pain at night or my sleep is disturbed.",
           "nextNodeId": "400"
         },
         {
           "value": "2",
-          "label": "No nocturnal pain",
+          "label": "No, I do not have night pain.",
           "nextNodeId": "500"
         }
       ]
@@ -238,16 +239,12 @@
     "300": {
       "id": "300",
       "type": "diagnosis",
-      "title": "C-spine origin favored",
-      "primaryDiagnosis": "Findings favor cervical spine origin (cervical radiculopathy).",
+      "title": "Neck origin favored",
+      "primaryDiagnosis": "Symptoms indicate nerve irritation originating in the neck (cervical radiculopathy). Requires neck-focused evaluation.",
       "differentials": [
-        "Shoulder pathology (rotator cuff tear, impingement, glenohumeral arthritis)",
-        "Median nerve entrapment (carpal tunnel syndrome)",
-        "Ulnar neuropathy at the elbow",
-        "Neuralgic amyotrophy (Parsonage-Turner syndrome)",
+        "Cervical nerve root compression",
         "Thoracic outlet syndrome",
-        "Peripheral entrapments and plexopathies",
-        "Myofascial and musculoskeletal pain syndromes"
+        "Peripheral nerve entrapment"
       ],
       "confidenceScore": 85
     },
@@ -255,10 +252,11 @@
       "id": "400",
       "type": "diagnosis",
       "title": "Shoulder origin favored",
-      "primaryDiagnosis": "Findings favor intrinsic shoulder origin (for example rotator cuff disease).",
+      "primaryDiagnosis": "Symptoms indicate pain originating inside the shoulder joint.",
       "differentials": [
-        "Cervical radiculopathy",
-        "Glenohumeral arthritis"
+        "Rotator cuff disorder",
+        "Adhesive capsulitis",
+        "Glenohumeral joint pathology"
       ],
       "confidenceScore": 85
     },
@@ -266,28 +264,23 @@
       "id": "500",
       "type": "diagnosis",
       "title": "Origin indeterminate",
-      "primaryDiagnosis": "Neither cervical nor shoulder criteria are met. The source of symptoms is indeterminate, and cervical and shoulder pathology may coexist.",
+      "primaryDiagnosis": "Symptoms do not clearly isolate neck or shoulder origin. Medical or physiotherapy evaluation recommended before structured shoulder exercise.",
       "differentials": [
-        "Cervical radiculopathy",
-        "Shoulder pathology",
-        "Coexisting cervical and shoulder pathology",
-        "Myofascial and musculoskeletal pain syndromes"
+        "Coexisting neck and shoulder issues",
+        "Myofascial pain"
       ],
       "confidenceScore": 50
     },
     "999": {
       "id": "999",
       "type": "diagnosis",
-      "title": "Emergency referral",
-      "primaryDiagnosis": "Emergency referral: a positive red flag requires prompt evaluation and specialist referral. Possible causes include cervical myelopathy, progressive neurologic deficit, spinal cord compression, infection, neoplasm (including Pancoast tumor), fracture, or vascular compromise.",
+      "title": "Urgent Medical Care Required",
+      "primaryDiagnosis": "You have selected a red flag symptom that requires medical evaluation before starting any self-directed physiotherapy exercises.",
       "differentials": [
-        "Cervical myelopathy",
         "Spinal cord compression",
-        "Spinal infection",
-        "Primary or metastatic tumor",
-        "Pancoast syndrome",
-        "Fracture",
-        "Thoracic outlet syndrome (venous or arterial)"
+        "Fracture or dislocation",
+        "Nerve damage",
+        "Vascular involvement"
       ],
       "confidenceScore": 100
     }

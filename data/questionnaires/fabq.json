@@ -1,0 +1,32 @@
+{
+  "id": "FABQ",
+  "title": "Fear-Avoidance Beliefs Questionnaire",
+  "instructions": "Rate agreement with each statement from 0 (Completely disagree) to 6 (Completely agree).",
+  "scale": {
+    "min": 0,
+    "max": 6,
+    "labels": {
+      "0": "Completely disagree",
+      "1": "Unsure",
+      "6": "Completely agree"
+    }
+  },
+  "items": [
+    { "id": 1, "text": "My pain was caused by physical activity." },
+    { "id": 2, "text": "Physical activity makes my pain worse." },
+    { "id": 3, "text": "Physical activity might harm my shoulder." },
+    { "id": 4, "text": "I should not do physical activities which might make my pain worse." },
+    { "id": 5, "text": "I cannot do physical activities which might make my pain worse." },
+    { "id": 6, "text": "My pain was caused by my work or by an accident at work." },
+    { "id": 7, "text": "My work makes my pain worse." },
+    { "id": 8, "text": "I have a claim for compensation for my pain." },
+    { "id": 9, "text": "My work is too heavy for me." },
+    { "id": 10, "text": "My work makes or would make my pain worse." },
+    { "id": 11, "text": "My work might harm my shoulder." },
+    { "id": 12, "text": "I should not do my normal work with my present pain." },
+    { "id": 13, "text": "I cannot do my normal work with my present pain." },
+    { "id": 14, "text": "I cannot do my normal work until my pain is treated." },
+    { "id": 15, "text": "I do not think that I will be able to go back to my normal work within 3 months." },
+    { "id": 16, "text": "I do not think that I will ever be able to go back to my work." }
+  ]
+}

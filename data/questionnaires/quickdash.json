@@ -1,0 +1,18 @@
+{
+  "id": "QuickDASH",
+  "title": "QuickDASH Outcome Measure",
+  "instructions": "Rate symptoms and ability in last week from 1 to 5.",
+  "items": [
+    { "id": 1, "text": "Open a tight or new jar." },
+    { "id": 2, "text": "Do heavy household chores (e.g., wash walls, floors)." },
+    { "id": 3, "text": "Carry a shopping bag or briefcase." },
+    { "id": 4, "text": "Wash your back." },
+    { "id": 5, "text": "Use a knife to cut food." },
+    { "id": 6, "text": "Recreational activities in which you take some force or impact through your arm, shoulder or hand." },
+    { "id": 7, "text": "Extent arm, shoulder or hand problem interfered with normal social activities." },
+    { "id": 8, "text": "Limitation in work or other regular daily activities." },
+    { "id": 9, "text": "Arm, shoulder or hand pain severity." },
+    { "id": 10, "text": "Tingling (pins and needles) in arm, shoulder or hand." },
+    { "id": 11, "text": "Difficulty sleeping because of pain in arm, shoulder or hand." }
+  ]
+}
