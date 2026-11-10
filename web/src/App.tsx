@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { Activity, ArrowLeft, ArrowRight, RotateCcw } from 'lucide-react'
 import { Button } from '../components/ui/button'
+import { QuickDashQuestionnaire } from './components/QuickDashQuestionnaire'
 import './App.css'
 
 interface RedFlag {
@@ -31,6 +32,14 @@ interface QuestionNode {
   options: Option[]
 }
 
+interface QuestionnaireEvalNode {
+  id: string
+  type: 'questionnaire_eval'
+  title: string
+  questionText: string
+  options: Option[]
+}
+
 interface DiagnosisNode {
   id: string
   type: 'diagnosis'
@@ -41,7 +50,45 @@ interface DiagnosisNode {
   icdCode?: string | null
 }
 
-type DecisionNode = ScreeningNode | QuestionNode | DiagnosisNode
+type DecisionNode = ScreeningNode | QuestionNode | QuestionnaireEvalNode | DiagnosisNode
+
+interface QuestionnaireItem {
+  id: number
+  text: string
+}
+
+const FABQ_ITEMS: QuestionnaireItem[] = [
+  { id: 1, text: 'My pain was caused by physical activity.' },
+  { id: 2, text: 'Physical activity makes my pain worse.' },
+  { id: 3, text: 'Physical activity might harm my shoulder.' },
+  { id: 4, text: 'I should not do physical activities which might make my pain worse.' },
+  { id: 5, text: 'I cannot do physical activities which might make my pain worse.' },
+  { id: 6, text: 'My pain was caused by my work or by an accident at work.' },
+  { id: 7, text: 'My work makes my pain worse.' },
+  { id: 8, text: 'I have a claim for compensation for my pain.' },
+  { id: 9, text: 'My work is too heavy for me.' },
+  { id: 10, text: 'My work makes or would make my pain worse.' },
+  { id: 11, text: 'My work might harm my shoulder.' },
+  { id: 12, text: 'I should not do my normal work with my present pain.' },
+  { id: 13, text: 'I cannot do my normal work with my present pain.' },
+  { id: 14, text: 'I cannot do my normal work until my pain is treated.' },
+  { id: 15, text: 'I do not think that I will be able to go back to my normal work within 3 months.' },
+  { id: 16, text: 'I do not think that I will ever be able to go back to my work.' },
+]
+
+const QUICKDASH_ITEMS: QuestionnaireItem[] = [
+  { id: 1, text: 'Open a tight or new jar.' },
+  { id: 2, text: 'Do heavy household chores (e.g., wash walls, floors).' },
+  { id: 3, text: 'Carry a shopping bag or briefcase.' },
+  { id: 4, text: 'Wash your back.' },
+  { id: 5, text: 'Use a knife to cut food.' },
+  { id: 6, text: 'Recreational activities in which you take some force or impact through your arm, shoulder or hand.' },
+  { id: 7, text: 'Extent arm, shoulder or hand problem interfered with normal social activities.' },
+  { id: 8, text: 'Limitation in work or other regular daily activities.' },
+  { id: 9, text: 'Arm, shoulder or hand pain severity.' },
+  { id: 10, text: 'Tingling (pins and needles) in arm, shoulder or hand.' },
+  { id: 11, text: 'Difficulty sleeping because of pain in arm, shoulder or hand.' },
+]
 
 interface DecisionTreeResponse {
   node: DecisionNode
@@ -58,6 +105,8 @@ interface DecisionTreeResponse {
 interface DecisionTreeRequest {
   nodeId?: string
   answer?: string
+  fabqAnswers?: Record<number, number>
+  quickdashAnswers?: Record<number, number>
 }
 
 const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/+$/, '')
@@ -97,6 +146,7 @@ function App() {
   const [diagnosis, setDiagnosis] = useState<DiagnosisNode | null>(null)
   const [history, setHistory] = useState<DecisionNode[]>([])
   const [selectedRedFlag, setSelectedRedFlag] = useState<string | null>(null)
+  const [formAnswers, setFormAnswers] = useState<Record<number, number>>({})
   const [isLoading, setIsLoading] = useState(true)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [error, setError] = useState<string | null>(null)
@@ -126,14 +176,23 @@ function App() {
     }
   }, [])
 
-  async function followAnswer(answer: string) {
+  async function followAnswer(
+    answer?: string,
+    fabqAnswers?: Record<number, number>,
+    quickdashAnswers?: Record<number, number>,
+  ) {
     if (node === null) return
 
     setIsSubmitting(true)
     setError(null)
 
     try {
-      let result = await requestDecisionTree({ nodeId: node.id, answer })
+      let result = await requestDecisionTree({
+        nodeId: node.id,
+        answer,
+        fabqAnswers,
+        quickdashAnswers,
+      })
       let nextNode = result.nextNode
       let finalDiagnosis = result.diagnosis
       let bridgeCount = 0
@@ -149,6 +208,7 @@ function App() {
         setDiagnosis(finalDiagnosis)
         setHistory((steps) => [...steps, node])
         setSelectedRedFlag(null)
+        setFormAnswers({})
         return
       }
 
@@ -159,6 +219,7 @@ function App() {
       setHistory((steps) => [...steps, node])
       setNode(nextNode)
       setSelectedRedFlag(null)
+      setFormAnswers({})
     } catch (requestError: unknown) {
       setError(
         requestError instanceof Error
@@ -176,6 +237,7 @@ function App() {
     setNode(null)
     setHistory([])
     setSelectedRedFlag(null)
+    setFormAnswers({})
     setError(null)
 
     try {
@@ -200,6 +262,7 @@ function App() {
     setNode(previousNode)
     setDiagnosis(null)
     setSelectedRedFlag(null)
+    setFormAnswers({})
     setError(null)
   }
 
@@ -319,6 +382,79 @@ function App() {
                     ))}
                   </div>
                 </>
+              ) : node.type === 'questionnaire_eval' ? (
+                (() => {
+                  const isFabq = Number(node.id) < 4000
+                  const items = isFabq ? FABQ_ITEMS : QUICKDASH_ITEMS
+                  const minimumRating = isFabq ? 0 : 1
+                  const maximumRating = isFabq ? 6 : 5
+                  const allItemsRated = items.every((item) => formAnswers[item.id] !== undefined)
+
+                  return (
+                    <>
+                      <h1>{node.title}</h1>
+                      <p className="questionnaire-instructions mt-5 leading-7 text-[#555]">
+                        {node.questionText}
+                      </p>
+                      <div className="questionnaire-list mt-7 grid gap-4">
+                        {isFabq ? (
+                          items.map((item) => (
+                            <fieldset
+                              className="questionnaire-item grid gap-3 rounded-2xl border border-[#dedede] p-4"
+                              key={item.id}
+                            >
+                              <legend className="px-1 text-sm leading-6">
+                                {item.id}. {item.text}
+                              </legend>
+                              <div className="questionnaire-ratings flex flex-wrap gap-2">
+                                {Array.from(
+                                  { length: maximumRating - minimumRating + 1 },
+                                  (_, index) => minimumRating + index,
+                                ).map((rating) => (
+                                  <Button
+                                    className="questionnaire-rating size-10 px-0"
+                                    variant={formAnswers[item.id] === rating ? 'default' : 'outline'}
+                                    key={rating}
+                                    onClick={() =>
+                                      setFormAnswers((answers) => ({ ...answers, [item.id]: rating }))
+                                    }
+                                    disabled={isSubmitting}
+                                    aria-pressed={formAnswers[item.id] === rating}
+                                    aria-label={`Rate item ${item.id} ${rating}`}
+                                  >
+                                    {rating}
+                                  </Button>
+                                ))}
+                              </div>
+                            </fieldset>
+                          ))
+                        ) : (
+                          <QuickDashQuestionnaire
+                            answers={formAnswers}
+                            disabled={isSubmitting}
+                            onAnswerChange={(itemId, value) =>
+                              setFormAnswers((answers) => ({ ...answers, [itemId]: value }))
+                            }
+                          />
+                        )}
+                      </div>
+                      <Button
+                        className="continue-button"
+                        onClick={() =>
+                          void followAnswer(
+                            undefined,
+                            isFabq ? formAnswers : undefined,
+                            isFabq ? undefined : formAnswers,
+                          )
+                        }
+                        disabled={!allItemsRated || isSubmitting}
+                      >
+                        {isSubmitting ? 'Submitting' : 'Submit Questionnaire'}
+                        <ArrowRight size={17} />
+                      </Button>
+                    </>
+                  )
+                })()
               ) : null}
               {error !== null && (
                 <div className="error-state" role="alert">
