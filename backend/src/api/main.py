@@ -9,6 +9,7 @@ from decision_tree import (
     InvalidChoiceError,
     Node,
     NodeNotFoundError,
+    evaluate_step,
 )
 
 
@@ -19,6 +20,8 @@ class DecisionTreeRequest(BaseModel):
 
     node_id: str | None = Field(default=None, alias="nodeId")
     answer: str | None = None
+    fabq_answers: dict[int, int] | None = Field(default=None, alias="fabqAnswers")
+    quickdash_answers: dict[int, int] | None = Field(default=None, alias="quickdashAnswers")
 
 
 class DecisionTreeRoute(BaseModel):
@@ -61,8 +64,14 @@ def get_decision_tree(request: DecisionTreeRequest) -> DecisionTreeResponse:
             raise HTTPException(status_code=404, detail=str(exc)) from exc
 
     try:
-        next_node = decision_tree.get_next_node(node.id, request.answer)
-    except InvalidChoiceError as exc:
+        next_node = evaluate_step(
+            decision_tree,
+            node.id,
+            answer=request.answer,
+            fabq_answers=request.fabq_answers,
+            quickdash_answers=request.quickdash_answers,
+        )
+    except (InvalidChoiceError, ValueError) as exc:
         raise HTTPException(status_code=422, detail=str(exc)) from exc
 
     route = (

@@ -7,11 +7,17 @@ import pytest
 
 from decision_tree.core import DecisionTree
 from decision_tree.exceptions import (
+    InvalidChoiceError,
     InvalidLayerError,
     InvalidTreeError,
     NodeNotFoundError,
 )
-from decision_tree.models import DiagnosisNode, QuestionNode, ScreeningNode
+from decision_tree.models import (
+    DiagnosisNode,
+    QuestionnaireEvalNode,
+    QuestionNode,
+    ScreeningNode,
+)
 
 SOURCE_DATA_DIR = Path(__file__).resolve().parents[2] / "data"
 
@@ -100,3 +106,20 @@ def test_rejects_invalid_bridge_source(tmp_path: Path) -> None:
 
     with pytest.raises(InvalidTreeError, match="400"):
         DecisionTree(data_dir)
+
+
+def test_questionnaire_eval_node_routing() -> None:
+    tree = DecisionTree()
+
+    assert isinstance(tree.get_node("2410"), QuestionnaireEvalNode)
+    assert tree.get_next_node("2410", eval_scores={"fabq_pa": 16, "fabq_w": 10}).id == "2960"
+    assert tree.get_next_node("2410", eval_scores={"fabq_pa": 5, "fabq_w": 10}).id == "2950"
+
+
+def test_questionnaire_eval_raises_on_missing_or_invalid_scores() -> None:
+    tree = DecisionTree()
+
+    with pytest.raises(InvalidChoiceError):
+        tree.get_next_node("2410", eval_scores={})
+    with pytest.raises(InvalidChoiceError):
+        tree.get_next_node("2410", answer="invalid")

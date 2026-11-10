@@ -1,8 +1,10 @@
 """Validated, read-only models for the clinical decision tree data."""
 
+from __future__ import annotations
+
 from typing import Annotated, Literal
 
-from pydantic import BaseModel, ConfigDict, Field
+from pydantic import AliasChoices, BaseModel, ConfigDict, Field, model_validator
 
 
 class TreeModel(BaseModel):
@@ -34,7 +36,37 @@ class QuestionNode(TreeModel):
     type: Literal["question"]
     title: str = Field(min_length=1)
     question_text: str = Field(alias="questionText", min_length=1)
+    patient_text: str | None = Field(default=None, alias="patientText")
     options: tuple[Option, ...] = Field(min_length=1)
+
+
+class QuestionnaireRule(TreeModel):
+    condition: str = Field(min_length=1)
+    label: str | None = None
+    next_node_id: str = Field(alias="nextNodeId", min_length=1)
+
+
+class QuestionnaireEvalNode(TreeModel):
+    id: str = Field(min_length=1)
+    type: Literal["questionnaire_eval"]
+    title: str = Field(min_length=1)
+    questionnaire_id: str | None = Field(
+        default=None,
+        alias="questionnaireId",
+        validation_alias=AliasChoices("questionnaireId", "questionnaire_id"),
+        min_length=1,
+    )
+    rules: tuple[QuestionnaireRule, ...] | None = Field(default=None, min_length=1)
+    question_text: str | None = Field(default=None, alias="questionText", min_length=1)
+    options: tuple[Option, ...] | None = Field(default=None, min_length=1)
+
+    @model_validator(mode="after")
+    def validate_questionnaire_shape(self) -> QuestionnaireEvalNode:
+        rule_shape = self.questionnaire_id is not None and self.rules is not None
+        option_shape = self.question_text is not None and self.options is not None
+        if not rule_shape and not option_shape:
+            raise ValueError("questionnaire_eval requires questionnaire rules or question options")
+        return self
 
 
 class DiagnosisNode(TreeModel):
@@ -47,7 +79,10 @@ class DiagnosisNode(TreeModel):
     icd_code: str | None = Field(default=None, alias="icdCode")
 
 
-Node = Annotated[ScreeningNode | QuestionNode | DiagnosisNode, Field(discriminator="type")]
+Node = Annotated[
+    ScreeningNode | QuestionNode | QuestionnaireEvalNode | DiagnosisNode,
+    Field(discriminator="type"),
+]
 
 
 class Layer(TreeModel):
