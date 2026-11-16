@@ -15,11 +15,13 @@ from numpy.typing import NDArray
 from pydantic import BaseModel, Field
 from qdrant_client import QdrantClient, models
 
-EMBED_MODEL = "BAAI/bge-m3"
-VECTOR_SIZE = 1024
+EMBED_MODEL = "BAAI/bge-small-en-v1.5"
+VECTOR_SIZE = 384
+BGE_QUERY_PREFIX = "Represent this sentence for searching relevant passages: "
 MAX_INPUT_TOKENS = 8192
 COLLECTION_PREFIX = "physio_sections_"
 ACTIVE_ALIAS = "physio_sections_active"
+ACTIVE_COLLECTION = "physio_v3"
 
 
 class Tokenizer(Protocol):
