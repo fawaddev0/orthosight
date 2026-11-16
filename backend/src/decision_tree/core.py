@@ -38,10 +38,10 @@ class DecisionTree:
             "2950": "3000",
             "2960": "3000",
             "3910": "4100",  # Adhesive capsulitis -> FABQ evaluation
-            "3920": "4200",  # Full-thickness tear -> QuickDASH evaluation
+            "3920": "4400",  # Full-thickness tear -> suspected tear evaluation
             "3930": "4200",  # Partial tear -> QuickDASH evaluation
             "3940": "4200",  # Impingement -> QuickDASH evaluation
-            "3950": "4100",  # Indeterminate -> FABQ evaluation
+            "3950": "4300",  # Indeterminate -> general recovery evaluation
             "3960": "4200",  # AC joint -> QuickDASH evaluation
             "3970": "4200",  # Labral tear -> QuickDASH evaluation
             "3980": "4200",  # Instability -> QuickDASH evaluation

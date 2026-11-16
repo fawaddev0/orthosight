@@ -109,6 +109,33 @@ interface DecisionTreeRequest {
   quickdashAnswers?: Record<number, number>
 }
 
+interface AnswerRecord {
+  questionId: string
+  question: string
+  answer: string
+}
+
+interface ExercisePlanExercise {
+  name: string
+  sets: number | null
+  reps: number | null
+  instructions: string
+  source_section_id: string
+  source_book: string
+  source_page_start: number
+  source_page_end: number
+  evidence_quote: string
+}
+
+interface ExercisePlanResponse {
+  condition_id: string
+  status: 'ready' | 'insufficient_evidence'
+  exercises: ExercisePlanExercise[]
+}
+
+const GENERAL_RECOVERY_DIAGNOSIS_ID = '4830'
+const RAG_ELIGIBLE_DIAGNOSIS_IDS = new Set(['4810', '4820'])
+
 const apiBaseUrl = (import.meta.env.VITE_API_BASE_URL ?? '').replace(/\/+$/, '')
 
 async function requestDecisionTree(
@@ -136,6 +163,115 @@ async function requestDecisionTree(
   return (await response.json()) as DecisionTreeResponse
 }
 
+async function requestExercisePlan(
+  diagnosis: DiagnosisNode,
+  patientHistory: string,
+  questionnaire: AnswerRecord[],
+): Promise<ExercisePlanResponse> {
+  const endpoint = `${apiBaseUrl}/api/exercise-plan`
+  const response = await fetch(endpoint, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      diagnosis,
+      patient_history: patientHistory,
+      questionnaire: questionnaire.map((item) => ({
+        question_id: item.questionId,
+        question: item.question,
+        answer: item.answer,
+      })),
+    }),
+  }).catch((requestError: unknown) => {
+    console.error('Workout recommendation request failed before receiving a response', requestError)
+    throw requestError
+  })
+
+  const responseText = await response.text()
+  let responseBody: unknown = responseText
+  if (responseText.length > 0) {
+    try {
+      responseBody = JSON.parse(responseText) as unknown
+    } catch {
+      // Keep non-JSON response text in the diagnostic details.
+    }
+  }
+
+  if (!response.ok) {
+    const errorDetails = {
+      name: 'WorkoutRecommendationRequestError',
+      method: 'POST',
+      endpoint,
+      status: response.status,
+      statusText: response.statusText,
+      body: responseBody,
+    }
+    console.error('Workout recommendation request returned an error', errorDetails)
+
+    const detail =
+      typeof responseBody === 'object' && responseBody !== null && 'detail' in responseBody
+        ? responseBody.detail
+        : responseBody
+    const detailText = typeof detail === 'string' ? detail : JSON.stringify(detail)
+    throw new Error(`Workout recommendation failed (${response.status}): ${detailText}`)
+  }
+
+  return responseBody as ExercisePlanResponse
+}
+
+function responsesForNode(
+  node: DecisionNode,
+  answer: string | undefined,
+  formAnswers: Record<number, number>,
+): { answers: AnswerRecord[]; questionnaire: AnswerRecord[] } {
+  if (node.type === 'screening') {
+    const selected = node.redFlags.find((flag) => flag.id === answer)
+    const response: AnswerRecord = {
+      questionId: node.id,
+      question: 'Do any of these warning signs apply to you?',
+      answer: selected?.text ?? 'None of these apply',
+    }
+    return { answers: [response], questionnaire: [] }
+  }
+
+  if (node.type === 'question') {
+    const selected = node.options.find((option) => option.value === answer)
+    if (selected === undefined) return { answers: [], questionnaire: [] }
+    const response: AnswerRecord = {
+      questionId: node.id,
+      question: node.questionText,
+      answer: selected.label,
+    }
+    return { answers: [response], questionnaire: [] }
+  }
+
+  if (node.type === 'questionnaire_eval') {
+    const isFabq = Number(node.id) < 4000
+    const items = isFabq ? FABQ_ITEMS : QUICKDASH_ITEMS
+    const responses = items.flatMap((item) => {
+      const rating = formAnswers[item.id]
+      return rating === undefined
+        ? []
+        : [{
+            questionId: `${node.id}:${item.id}`,
+            question: item.text,
+            answer: String(rating),
+          }]
+    })
+    return { answers: responses, questionnaire: responses }
+  }
+
+  return { answers: [], questionnaire: [] }
+}
+
+function withoutNodeResponses(
+  records: Record<string, AnswerRecord>,
+  nodeId: string,
+): Record<string, AnswerRecord> {
+  return Object.fromEntries(
+    Object.entries(records).filter(([key]) => key !== nodeId && !key.startsWith(`${nodeId}:`)),
+  )
+}
+
 function layerForNode(node: DecisionNode): number {
   const id = Number(node.id)
   return id >= 1000 ? Math.floor(id / 1000) : 1
@@ -144,7 +280,13 @@ function layerForNode(node: DecisionNode): number {
 function App() {
   const [node, setNode] = useState<DecisionNode | null>(null)
   const [diagnosis, setDiagnosis] = useState<DiagnosisNode | null>(null)
+  const [unsupportedDiagnosis, setUnsupportedDiagnosis] = useState(false)
   const [history, setHistory] = useState<DecisionNode[]>([])
+  const [answerHistory, setAnswerHistory] = useState<Record<string, AnswerRecord>>({})
+  const [questionnaireHistory, setQuestionnaireHistory] = useState<Record<string, AnswerRecord>>({})
+  const [exercisePlan, setExercisePlan] = useState<ExercisePlanResponse | null>(null)
+  const [isPlanLoading, setIsPlanLoading] = useState(false)
+  const [planError, setPlanError] = useState<string | null>(null)
   const [selectedRedFlag, setSelectedRedFlag] = useState<string | null>(null)
   const [formAnswers, setFormAnswers] = useState<Record<number, number>>({})
   const [isLoading, setIsLoading] = useState(true)
@@ -176,6 +318,37 @@ function App() {
     }
   }, [])
 
+  async function loadExercisePlan(
+    targetDiagnosis: DiagnosisNode,
+    answers: Record<string, AnswerRecord>,
+    questionnaireAnswers: Record<string, AnswerRecord>,
+  ) {
+    setIsPlanLoading(true)
+    setPlanError(null)
+    setExercisePlan(null)
+
+    try {
+      const patientHistory = Object.values(answers)
+        .filter((item) => !item.questionId.includes(':'))
+        .map((item) => `${item.question}: ${item.answer}`)
+        .join('\n')
+      const plan = await requestExercisePlan(
+        targetDiagnosis,
+        patientHistory,
+        Object.values(questionnaireAnswers),
+      )
+      setExercisePlan(plan)
+    } catch (requestError: unknown) {
+      setPlanError(
+        requestError instanceof Error
+          ? requestError.message
+          : 'Workout recommendation failed. See the browser console for error details.',
+      )
+    } finally {
+      setIsPlanLoading(false)
+    }
+  }
+
   async function followAnswer(
     answer?: string,
     fabqAnswers?: Record<number, number>,
@@ -204,11 +377,30 @@ function App() {
         bridgeCount += 1
       }
 
+      const stepResponses = responsesForNode(node, answer, formAnswers)
+      const nextAnswerHistory: Record<string, AnswerRecord> = { ...answerHistory }
+      for (const response of stepResponses.answers) {
+        nextAnswerHistory[response.questionId] = response
+      }
+      const nextQuestionnaireHistory: Record<string, AnswerRecord> = { ...questionnaireHistory }
+      for (const response of stepResponses.questionnaire) {
+        nextQuestionnaireHistory[response.questionId] = response
+      }
+      setAnswerHistory(nextAnswerHistory)
+      setQuestionnaireHistory(nextQuestionnaireHistory)
+
       if (finalDiagnosis !== null) {
-        setDiagnosis(finalDiagnosis)
+        const isUnsupported = finalDiagnosis.id === GENERAL_RECOVERY_DIAGNOSIS_ID
+        setDiagnosis(isUnsupported ? null : finalDiagnosis)
+        setUnsupportedDiagnosis(isUnsupported)
+        setExercisePlan(null)
+        setPlanError(null)
         setHistory((steps) => [...steps, node])
         setSelectedRedFlag(null)
         setFormAnswers({})
+        if (RAG_ELIGIBLE_DIAGNOSIS_IDS.has(finalDiagnosis.id)) {
+          await loadExercisePlan(finalDiagnosis, nextAnswerHistory, nextQuestionnaireHistory)
+        }
         return
       }
 
@@ -234,8 +426,14 @@ function App() {
   async function restart() {
     setIsLoading(true)
     setDiagnosis(null)
+    setUnsupportedDiagnosis(false)
     setNode(null)
     setHistory([])
+    setAnswerHistory({})
+    setQuestionnaireHistory({})
+    setExercisePlan(null)
+    setIsPlanLoading(false)
+    setPlanError(null)
     setSelectedRedFlag(null)
     setFormAnswers({})
     setError(null)
@@ -261,6 +459,12 @@ function App() {
     setHistory((steps) => steps.slice(0, -1))
     setNode(previousNode)
     setDiagnosis(null)
+    setUnsupportedDiagnosis(false)
+    setAnswerHistory((records) => withoutNodeResponses(records, previousNode.id))
+    setQuestionnaireHistory((records) => withoutNodeResponses(records, previousNode.id))
+    setExercisePlan(null)
+    setIsPlanLoading(false)
+    setPlanError(null)
     setSelectedRedFlag(null)
     setFormAnswers({})
     setError(null)
@@ -285,6 +489,21 @@ function App() {
             <span className="loading-mark" aria-hidden="true" />
             <p>Loading assessment</p>
           </div>
+        ) : unsupportedDiagnosis ? (
+          <div className="result-view">
+            <div className="result-icon" aria-hidden="true">
+              <Activity size={25} strokeWidth={1.8} />
+            </div>
+            <p className="eyebrow">Assessment complete</p>
+            <h1>No supported diagnosis</h1>
+            <p className="result-copy">
+              This assessment did not identify a condition with evidence-backed workout guidance in OrthoSight.
+            </p>
+            <Button className="restart-button" onClick={restart} disabled={isSubmitting}>
+              <RotateCcw size={16} />
+              Start again
+            </Button>
+          </div>
         ) : diagnosis !== null ? (
           <div className="result-view">
             <div className="result-icon" aria-hidden="true">
@@ -293,6 +512,53 @@ function App() {
             <p className="eyebrow">Assessment complete</p>
             <h1>{diagnosis.title}</h1>
             <p className="result-copy">{diagnosis.primaryDiagnosis}</p>
+            {RAG_ELIGIBLE_DIAGNOSIS_IDS.has(diagnosis.id) && (
+              <section className="exercise-plan" aria-live="polite" aria-busy={isPlanLoading}>
+                <h2>Recommended workouts</h2>
+                {isPlanLoading ? (
+                  <p className="plan-message" role="status">Finding evidence-based workouts…</p>
+                ) : planError !== null ? (
+                  <div className="plan-error-state" role="alert">
+                    <p className="plan-message plan-error">{planError}</p>
+                    <Button
+                      variant="outline"
+                      className="plan-retry-button"
+                      onClick={() => void loadExercisePlan(diagnosis, answerHistory, questionnaireHistory)}
+                      disabled={isPlanLoading}
+                    >
+                      <RotateCcw size={16} />
+                      Retry recommendations
+                    </Button>
+                  </div>
+                ) : exercisePlan?.status === 'insufficient_evidence' ? (
+                  <p className="plan-message" role="status">
+                    We could not find enough book evidence to recommend workouts for this diagnosis.
+                  </p>
+                ) : exercisePlan?.status === 'ready' ? (
+                  <ul className="exercise-list">
+                    {exercisePlan.exercises.map((exercise) => (
+                      <li
+                        className="exercise-item"
+                        key={`${exercise.source_section_id}:${exercise.name}`}
+                      >
+                        <h3>{exercise.name}</h3>
+                        {exercise.sets !== null && exercise.reps !== null && (
+                          <p className="exercise-dose">{exercise.sets} sets · {exercise.reps} reps</p>
+                        )}
+                        {exercise.instructions !== '' && <p>{exercise.instructions}</p>}
+                        <p className="exercise-source">
+                          {exercise.source_book}, pp. {exercise.source_page_start}
+                          {exercise.source_page_end !== exercise.source_page_start
+                            ? `–${exercise.source_page_end}`
+                            : ''}
+                        </p>
+                        <blockquote>{exercise.evidence_quote}</blockquote>
+                      </li>
+                    ))}
+                  </ul>
+                ) : null}
+              </section>
+            )}
             <Button className="restart-button" onClick={restart} disabled={isSubmitting}>
               <RotateCcw size={16} />
               Start again

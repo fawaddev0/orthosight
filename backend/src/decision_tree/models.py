@@ -74,7 +74,7 @@ class DiagnosisNode(TreeModel):
     type: Literal["diagnosis"]
     title: str = Field(min_length=1)
     primary_diagnosis: str = Field(alias="primaryDiagnosis", min_length=1)
-    differentials: tuple[str, ...]
+    differentials: tuple[str, ...] = Field(strict=False)
     confidence_score: int = Field(alias="confidenceScore", ge=0, le=100)
     icd_code: str | None = Field(default=None, alias="icdCode")
 

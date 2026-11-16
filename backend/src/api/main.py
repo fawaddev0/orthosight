@@ -1,5 +1,9 @@
 """HTTP API for serving the complete clinical decision tree."""
 
+import logging
+from pathlib import Path
+
+from dotenv import load_dotenv
 from fastapi import FastAPI, HTTPException
 from pydantic import BaseModel, ConfigDict, Field
 
@@ -11,6 +15,11 @@ from decision_tree import (
     NodeNotFoundError,
     evaluate_step,
 )
+from rag.response_generator import AnswerRequest, PlanResponse, generate_plan
+from rag.retriever import CONDITION_QUERIES
+
+load_dotenv(Path(__file__).resolve().parents[2] / ".env")
+logger = logging.getLogger(__name__)
 
 
 class DecisionTreeRequest(BaseModel):
@@ -97,3 +106,23 @@ def get_decision_tree(request: DecisionTreeRequest) -> DecisionTreeResponse:
         diagnosis=diagnosis,
         complete=diagnosis is not None,
     )
+
+
+@app.post("/api/exercise-plan", response_model=PlanResponse)
+def get_exercise_plan(request: AnswerRequest) -> PlanResponse:
+    """Return evidence-backed exercises for diagnoses with a home-plan route."""
+    if request.diagnosis.id not in CONDITION_QUERIES:
+        raise HTTPException(
+            status_code=422,
+            detail=f"Diagnosis {request.diagnosis.id} is not eligible for a home exercise plan",
+        )
+    try:
+        return generate_plan(request)
+    except ValueError as exc:
+        raise HTTPException(status_code=422, detail=str(exc)) from exc
+    except Exception as exc:
+        logger.exception("Exercise-plan generation failed for diagnosis %s", request.diagnosis.id)
+        raise HTTPException(
+            status_code=500,
+            detail="Exercise-plan generation failed. Check backend logs for details.",
+        ) from exc

@@ -18,7 +18,12 @@ from rag.embedding_generator import (
     prepare_sections,
 )
 from rag.response_generator import AnswerRequest, QuestionnaireResponse, generate_plan
-from rag.retriever import RetrievedSection, retrieve
+from rag.retriever import (
+    CONDITION_QUERIES,
+    RetrievedSection,
+    _section_from_payload,
+    retrieve,
+)
 
 
 def _write_sections(path: Path, rows: list[dict[str, object]]) -> None:
@@ -164,9 +169,29 @@ def test_retrieve_reranks_full_sections_and_excludes_surgical_book() -> None:
 
     hits = retrieve("4820", client=client, embedder=_QueryEmbedder(), reranker=reranker)
 
-    assert [hit.section.section_id for hit in hits] == ["section-5", "section-4", "section-3", "section-2"]
+    assert [hit.section.section_id for hit in hits] == [
+        "section-5", "section-4", "section-3", "section-2", "section-1", "section-0"
+    ]
     assert all("Full sentence." in pair[1] for pair in reranker.pairs)
     assert all(hit.section.book != "shoulder_surgical_stuff" for hit in hits)
+
+
+def test_section_payload_uses_complete_parent_text_and_stable_parent_id() -> None:
+    section = _section_from_payload({
+        "book": "Kisner",
+        "text": "Pendulum exercises can be used for joint stretching.",
+        "parent_text": "Adhesive capsulitis treatment. Pendulum exercises can be used for joint stretching.",
+        "parent_id": "Kisner|p491|118",
+        "child_idx": 2,
+        "section_path": "Shoulder > Adhesive Capsulitis",
+        "pdf_page": 491,
+        "page_start": 491,
+        "page_end": 491,
+    })
+
+    assert section.section_id == "Kisner|p491|118"
+    assert section.heading_path == ["Shoulder", "Adhesive Capsulitis"]
+    assert section.text.startswith("Adhesive capsulitis treatment.")
 
 
 def test_retrieve_rejects_referral_diagnosis_before_search() -> None:
@@ -174,15 +199,26 @@ def test_retrieve_rejects_referral_diagnosis_before_search() -> None:
         retrieve("4910")
 
 
+def test_tendon_impingement_query_targets_conservative_exercise_evidence() -> None:
+    query = CONDITION_QUERIES["4820"].casefold()
+
+    assert "painful shoulder syndromes without dislocation" in query
+    assert "pendulum exercises without weights" in query
+    assert "rotator cuff" in query
+    assert "postoperative" not in query
+
+
 class _Generator:
     def __init__(self, response: dict[str, object]) -> None:
         self.response = json.dumps(response)
         self.prompt = ""
+        self.system = ""
 
     def count_tokens(self, system: str, user: str) -> int:
         return len((system + user).split())
 
     def generate(self, system: str, user: str) -> str:
+        self.system = system
         self.prompt = user
         return self.response
 
@@ -304,16 +340,181 @@ def test_answer_rejects_evidence_for_other_condition() -> None:
     assert generator.prompt == ""
 
 
-def test_answer_does_not_generate_when_book_lacks_sets_and_reps() -> None:
+def test_answer_accepts_source_supported_exercise_without_prescribed_dosage() -> None:
     hit = _exercise_hit()
     no_dosage = RetrievedSection(
         section=hit.section.model_copy(update={"text": "Rotator cuff pendulum exercise: move arm gently."}),
         score=hit.score,
     )
-    generator = _Generator({"exercises": []})
+    generator = _Generator({"exercises": [{
+        "name": "Pendulum exercise",
+        "sets": None,
+        "reps": None,
+        "instructions": "",
+        "source_section_id": "exercise-1",
+        "evidence_quote": "Rotator cuff pendulum exercise: move arm gently.",
+    }]})
 
     plan = generate_plan(_answer_request(), retrieve_sections=lambda condition: [no_dosage], generator=generator)
 
-    assert plan.status == "insufficient_evidence"
-    assert plan.exercises == []
-    assert generator.prompt == ""
+    assert plan.status == "ready"
+    assert len(plan.exercises) == 1
+    assert plan.exercises[0].sets is None
+    assert plan.exercises[0].reps is None
+    assert "Rotator cuff pendulum exercise" in generator.prompt
+    assert "copy the exact exercise name" in generator.system.casefold()
+    assert "return each distinct exercise" in generator.system.casefold()
+
+
+def test_answer_accepts_exercise_name_with_plural_source_wording() -> None:
+    quote = "Pendulum exercises without weights can cause gentle shoulder oscillation."
+    generator = _Generator({"exercises": [{
+        "name": "Pendulum exercise",
+        "sets": None,
+        "reps": None,
+        "instructions": "",
+        "source_section_id": "exercise-1",
+        "evidence_quote": quote,
+    }]})
+    hit = RetrievedSection(
+        section=_exercise_hit().section.model_copy(update={"text": quote}),
+        score=0.9,
+    )
+
+    plan = generate_plan(
+        _answer_request(),
+        retrieve_sections=lambda condition: [hit],
+        generator=generator,
+    )
+
+    assert plan.status == "ready"
+    assert len(plan.exercises) == 1
+    assert plan.exercises[0].name == "Pendulum exercise"
+
+
+def test_answer_requotes_source_when_model_name_is_elsewhere_in_section() -> None:
+    source_text = (
+        "Pendulum exercises without weights are gentle. "
+        "Multiple-angle muscle setting and protected stabilization exercises are initiated."
+    )
+    generator = _Generator({"exercises": [{
+        "name": "Multiple-angle muscle setting",
+        "sets": None,
+        "reps": None,
+        "instructions": "",
+        "source_section_id": "exercise-1",
+        "evidence_quote": "Pendulum exercises without weights are gentle.",
+    }]})
+    hit = RetrievedSection(
+        section=_exercise_hit().section.model_copy(update={"text": source_text}),
+        score=0.9,
+    )
+
+    plan = generate_plan(
+        _answer_request(),
+        retrieve_sections=lambda condition: [hit],
+        generator=generator,
+    )
+
+    assert plan.status == "ready"
+    assert plan.exercises[0].name == "Multiple-angle muscle setting"
+    assert "Multiple-angle muscle setting" in plan.exercises[0].evidence_quote
+    assert plan.exercises[0].evidence_quote in source_text
+
+
+def test_answer_deduplicates_pendulum_aliases() -> None:
+    first = _exercise_hit()
+    second = RetrievedSection(
+        section=first.section.model_copy(update={
+            "section_id": "exercise-2",
+            "text": "Rotator cuff Pendulum (Codman's) exercises use gravity to distract the humerus.",
+        }),
+        score=0.8,
+    )
+    generator = _Generator({"exercises": [
+        {
+            "name": "Pendulum exercises",
+            "sets": None,
+            "reps": None,
+            "instructions": "",
+            "source_section_id": "exercise-1",
+            "evidence_quote": first.section.text,
+        },
+        {
+            "name": "Pendulum (Codman's) exercises",
+            "sets": None,
+            "reps": None,
+            "instructions": "",
+            "source_section_id": "exercise-2",
+            "evidence_quote": second.section.text,
+        },
+    ]})
+
+    plan = generate_plan(
+        _answer_request(),
+        retrieve_sections=lambda condition: [first, second],
+        generator=generator,
+    )
+
+    assert plan.status == "ready"
+    assert len(plan.exercises) == 1
+
+
+def test_answer_keeps_source_supported_exercise_when_instructions_are_paraphrased() -> None:
+    generator = _Generator({"exercises": [{
+        "name": "Pendulum exercise",
+        "sets": None,
+        "reps": None,
+        "instructions": "Gently swing the arm to improve mobility.",
+        "source_section_id": "exercise-1",
+        "evidence_quote": "Rotator cuff pendulum exercise: move arm gently.",
+    }]})
+    hit = RetrievedSection(
+        section=_exercise_hit().section.model_copy(update={
+            "text": "Rotator cuff pendulum exercise: move arm gently.",
+        }),
+        score=0.9,
+    )
+
+    plan = generate_plan(
+        _answer_request(),
+        retrieve_sections=lambda condition: [hit],
+        generator=generator,
+    )
+
+    assert plan.status == "ready"
+    assert len(plan.exercises) == 1
+    assert plan.exercises[0].instructions == ""
+    assert plan.exercises[0].evidence_quote == "Rotator cuff pendulum exercise: move arm gently."
+
+
+def test_answer_prioritizes_home_exercise_evidence_over_background() -> None:
+    background_hits = [
+        RetrievedSection(
+            section=_exercise_hit().section.model_copy(update={
+                "section_id": f"background-{index}",
+                "heading_path": ["Shoulder", "Adhesive Capsulitis", "Overview"],
+                "text": "Adhesive capsulitis causes progressive shoulder stiffness.",
+            }),
+            score=1.0 - index / 10,
+        )
+        for index in range(4)
+    ]
+    exercise_hit = RetrievedSection(
+        section=_exercise_hit().section.model_copy(update={
+            "section_id": "home-exercise",
+            "heading_path": ["Shoulder", "Adhesive Capsulitis", "Exercises"],
+            "text": "Adhesive capsulitis: pendulum exercise gently stretches the joint.",
+        }),
+        score=0.2,
+    )
+    generator = _Generator({"exercises": []})
+
+    generate_plan(
+        _answer_request("4810"),
+        retrieve_sections=lambda condition: [*background_hits, exercise_hit],
+        generator=generator,
+    )
+
+    evidence = json.loads(generator.prompt)["evidence"]
+    assert evidence[0]["section_id"] == "home-exercise"

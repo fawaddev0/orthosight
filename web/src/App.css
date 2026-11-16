@@ -258,6 +258,85 @@
   line-height: 1.75;
 }
 
+.exercise-plan {
+  margin-top: 32px;
+  padding-top: 26px;
+  border-top: 1px solid #dedede;
+}
+
+.exercise-plan h2 {
+  margin: 0;
+  color: #171717;
+  font-size: 19px;
+  font-weight: 600;
+  letter-spacing: -0.02em;
+}
+
+.plan-message {
+  margin: 14px 0 0;
+  color: #555;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.plan-error {
+  color: #8a2828;
+}
+
+.plan-error-state {
+  display: grid;
+  justify-items: start;
+  gap: 12px;
+}
+
+.plan-retry-button {
+  min-height: 40px;
+}
+
+.exercise-list {
+  display: grid;
+  gap: 16px;
+  margin: 18px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.exercise-item {
+  padding: 18px 0;
+  border-top: 1px solid #ededed;
+  color: #414141;
+  font-size: 14px;
+  line-height: 1.65;
+}
+
+.exercise-item h3 {
+  margin: 0;
+  color: #171717;
+  font-size: 16px;
+  font-weight: 650;
+}
+
+.exercise-dose {
+  margin: 7px 0;
+  color: #171717;
+  font-weight: 600;
+}
+
+.exercise-source {
+  margin: 10px 0;
+  color: #666;
+  font-size: 12px;
+}
+
+.exercise-item blockquote {
+  margin: 12px 0 0;
+  padding-left: 14px;
+  border-left: 2px solid #c9c9c9;
+  color: #666;
+  font-size: 12px;
+  line-height: 1.6;
+}
+
 .state-message {
   display: grid;
   min-height: 360px;
