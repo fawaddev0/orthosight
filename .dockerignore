@@ -1,0 +1,11 @@
+.git
+.browser-test-profile
+.browser_audit.py
+data_backup
+tasks
+mobile
+web
+backend/tests
+backend/.venv
+**/node_modules
+**/__pycache__

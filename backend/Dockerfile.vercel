@@ -1,0 +1,13 @@
+FROM ghcr.io/astral-sh/uv:python3.15-trixie-slim
+
+WORKDIR /app
+ENV UV_NO_DEV=1 \
+    PYTHONPATH=/app/backend/src
+
+COPY backend/pyproject.toml backend/uv.lock /app/backend/
+RUN uv sync --project /app/backend --locked --no-dev
+
+COPY backend/src /app/backend/src
+COPY data /app/data
+
+CMD ["sh", "-c", "uv run --project /app/backend uvicorn api.main:app --host 0.0.0.0 --port ${PORT:-80}"]
