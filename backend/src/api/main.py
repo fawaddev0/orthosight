@@ -59,6 +59,12 @@ app = FastAPI(title="OrthoSight API")
 decision_tree = DecisionTree()
 
 
+@app.get("/api/health")
+def health_check() -> dict[str, str]:
+    """Return a lightweight health response without calling external services."""
+    return {"status": "ok"}
+
+
 @app.post("/api/decision-tree", response_model=DecisionTreeResponse)
 def get_decision_tree(request: DecisionTreeRequest) -> DecisionTreeResponse:
     """Return a decision node and advance the tree when an answer is provided."""
