@@ -56,6 +56,15 @@ class Reranker(Protocol):
     def predict(self, pairs: list[list[str]]) -> NDArray[np.float32]: ...
 
 
+class CloudflareQueryEmbedder:
+    def __init__(self) -> None:
+        self.model = CloudflareEmbeddingModel()
+
+    def encode(self, text: str, *, normalize_embeddings: bool) -> NDArray[np.float32]:
+        vectors = self.model.encode([text], normalize_embeddings=normalize_embeddings)
+        return vectors[0]
+
+
 class CloudflareReranker:
     def predict(self, pairs: list[list[str]]) -> NDArray[np.float32]:
         if any(len(pair) != 2 for pair in pairs):
@@ -76,7 +85,7 @@ class RetrievedSection:
 
 @lru_cache(maxsize=1)
 def _load_embedder() -> QueryEmbedder:
-    return CloudflareEmbeddingModel()
+    return CloudflareQueryEmbedder()
 
 
 @lru_cache(maxsize=1)
