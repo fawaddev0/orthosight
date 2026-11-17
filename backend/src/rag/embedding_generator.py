@@ -8,31 +8,39 @@ import re
 import uuid
 from collections.abc import Callable, Iterator
 from pathlib import Path
-from typing import Protocol, cast
+from typing import Protocol
 
 import numpy as np
 from numpy.typing import NDArray
 from pydantic import BaseModel, Field
 from qdrant_client import QdrantClient, models
 
-EMBED_MODEL = "BAAI/bge-small-en-v1.5"
+from rag.cloudflare_ai import EMBEDDING_MODEL, create_embeddings
+
+EMBED_MODEL = EMBEDDING_MODEL
 VECTOR_SIZE = 384
 BGE_QUERY_PREFIX = "Represent this sentence for searching relevant passages: "
-MAX_INPUT_TOKENS = 8192
+MAX_INPUT_TOKENS = 512
 COLLECTION_PREFIX = "physio_sections_"
 ACTIVE_ALIAS = "physio_sections_active"
 ACTIVE_COLLECTION = "physio_v3"
 
 
-class Tokenizer(Protocol):
-    def encode(self, text: str, *, add_special_tokens: bool) -> list[int]: ...
-
-
 class EmbeddingModel(Protocol):
-    tokenizer: Tokenizer
-    max_seq_length: int
-
     def encode(self, texts: list[str], *, normalize_embeddings: bool) -> NDArray[np.float32]: ...
+
+
+class CloudflareEmbeddingModel:
+    def encode(self, texts: list[str], *, normalize_embeddings: bool) -> NDArray[np.float32]:
+        vectors = np.asarray(create_embeddings(texts), dtype=np.float32)
+        if vectors.shape != (len(texts), VECTOR_SIZE):
+            raise RuntimeError(f"Cloudflare returned embeddings with invalid shape: {vectors.shape}")
+        if normalize_embeddings:
+            norms = np.linalg.norm(vectors, axis=1, keepdims=True)
+            if np.any(norms == 0):
+                raise RuntimeError("Cloudflare returned a zero embedding")
+            vectors = vectors / norms
+        return vectors
 
 
 class Section(BaseModel):
@@ -81,7 +89,7 @@ def read_sections(path: Path) -> Iterator[Section]:
 
 def prepare_sections(
     path: Path,
-    count_tokens: Callable[[str], int],
+    count_tokens: Callable[[str], int] | None = None,
     max_tokens: int = MAX_INPUT_TOKENS,
 ) -> list[IndexedSection]:
     """Validate all input before any vector database writes."""
@@ -96,7 +104,7 @@ def prepare_sections(
         record = IndexedSection.model_validate(section.model_dump(exclude={"ready_for_embedding"}))
         if not record.text.strip():
             raise ValueError(f"Empty ready section: {record.section_id}")
-        if count_tokens(record.embedding_text) > max_tokens:
+        if count_tokens is not None and count_tokens(record.embedding_text) > max_tokens:
             raise ValueError(f"Section exceeds {max_tokens} embedding tokens: {record.section_id}")
         records.append(record)
     if not records:
@@ -113,24 +121,21 @@ def index_sections(
 ) -> int:
     """Create new collection only after every ready section passes preflight."""
     if model is None:
-        from sentence_transformers import SentenceTransformer
-
-        model = cast(EmbeddingModel, SentenceTransformer(EMBED_MODEL))
+        model = CloudflareEmbeddingModel()
 
     name = collection_name(version)
-    records = prepare_sections(
-        path,
-        lambda value: len(model.tokenizer.encode(value, add_special_tokens=True)),
-        max_tokens=min(MAX_INPUT_TOKENS, model.max_seq_length),
-    )
+    records = prepare_sections(path)
     if client is None:
         client = QdrantClient(url=os.environ["QDRANT_URL"], api_key=os.environ.get("QDRANT_API_KEY"))
     if client.collection_exists(name):
         raise ValueError(f"Collection already exists: {name}; use a new version")
+    vectors_by_batch = [
+        model.encode([record.embedding_text for record in records[start:start + 16]], normalize_embeddings=True)
+        for start in range(0, len(records), 16)
+    ]
     client.create_collection(name, vectors_config=models.VectorParams(size=VECTOR_SIZE, distance=models.Distance.COSINE))
-    for start in range(0, len(records), 16):
+    for start, vectors in zip(range(0, len(records), 16), vectors_by_batch, strict=True):
         batch = records[start:start + 16]
-        vectors = model.encode([record.embedding_text for record in batch], normalize_embeddings=True)
         points = [
             models.PointStruct(
                 id=str(uuid.uuid5(uuid.NAMESPACE_URL, record.section_id)),

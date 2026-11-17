@@ -7,22 +7,24 @@ import logging
 import os
 from dataclasses import dataclass
 from functools import lru_cache
-from typing import Protocol, cast
+from typing import Protocol
 
 import numpy as np
 from numpy.typing import NDArray
 from qdrant_client import QdrantClient, models
 
+from rag.cloudflare_ai import RERANKER_MODEL, rerank as cloudflare_rerank
 from rag.embedding_generator import (
     ACTIVE_ALIAS,
     ACTIVE_COLLECTION,
     BGE_QUERY_PREFIX,
     EMBED_MODEL,
+    CloudflareEmbeddingModel,
     IndexedSection,
 )
 
 logger = logging.getLogger(__name__)
-RERANK_MODEL = "BAAI/bge-reranker-v2-m3"
+RERANK_MODEL = RERANKER_MODEL
 CANDIDATE_LIMIT = 12
 QDRANT_SEARCH_LIMIT = 48
 RESULT_LIMIT = 4
@@ -50,17 +52,20 @@ class QueryEmbedder(Protocol):
     def encode(self, text: str, *, normalize_embeddings: bool) -> NDArray[np.float32]: ...
 
 
-class PairTokenizer(Protocol):
-    def encode(
-        self, query: str, passage: str, *, add_special_tokens: bool, truncation: bool
-    ) -> list[int]: ...
-
-
 class Reranker(Protocol):
-    tokenizer: PairTokenizer
-    max_length: int
-
     def predict(self, pairs: list[list[str]]) -> NDArray[np.float32]: ...
+
+
+class CloudflareReranker:
+    def predict(self, pairs: list[list[str]]) -> NDArray[np.float32]:
+        if any(len(pair) != 2 for pair in pairs):
+            raise ValueError("Each reranker input must contain a query and passage")
+        if not pairs:
+            return np.empty(0, dtype=np.float32)
+        query = pairs[0][0]
+        if any(pair[0] != query for pair in pairs):
+            raise ValueError("Cloudflare reranker batch must use one query")
+        return np.asarray(cloudflare_rerank(query, [pair[1] for pair in pairs]), dtype=np.float32)
 
 
 @dataclass(frozen=True)
@@ -71,22 +76,12 @@ class RetrievedSection:
 
 @lru_cache(maxsize=1)
 def _load_embedder() -> QueryEmbedder:
-    from sentence_transformers import SentenceTransformer
-
-    return cast(QueryEmbedder, SentenceTransformer(EMBED_MODEL))
+    return CloudflareEmbeddingModel()
 
 
 @lru_cache(maxsize=1)
 def _load_reranker() -> Reranker:
-    from sentence_transformers import CrossEncoder
-
-    return cast(Reranker, CrossEncoder(RERANK_MODEL, max_length=8192))
-
-
-def preload_models() -> None:
-    """Load local embedding and reranking models into the Hugging Face cache."""
-    _load_embedder()
-    _load_reranker()
+    return CloudflareReranker()
 
 
 def _section_from_payload(payload: dict[str, object]) -> IndexedSection:
@@ -185,9 +180,6 @@ def retrieve(
     if not sections:
         return []
     pairs = [[query, section.embedding_text] for section in sections]
-    for pair, section in zip(pairs, sections, strict=True):
-        if len(reranker.tokenizer.encode(pair[0], pair[1], add_special_tokens=True, truncation=False)) > reranker.max_length:
-            raise ValueError(f"Reranker input would truncate section: {section.section_id}")
     scores = reranker.predict(pairs)
     ranked = sorted(
         (RetrievedSection(section=section, score=float(score)) for section, score in zip(sections, scores, strict=True)),
